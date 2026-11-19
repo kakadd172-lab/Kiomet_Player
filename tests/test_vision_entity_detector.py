@@ -77,8 +77,43 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertIn("exactly 280 pixels wide and 315 pixels high", prompt)
         self.assertIn("relative to this attached crop only", prompt)
         self.assertIn("bbox.width and bbox.height are dimensions", prompt)
-        self.assertIn("mobile troop/vehicle/ship icon", prompt)
+        self.assertIn("including the King and special entities", prompt)
         self.assertIn("Do not copy example coordinates", prompt)
+
+
+    def test_prompt_covers_neutral_entities_and_special_units(self):
+        prompt = VisionEntityDetector._prompt(640, 450)
+        self.assertIn("neutral/grey entities", prompt)
+        self.assertIn("coloured/player-controlled entities", prompt)
+        self.assertIn("including the King and special entities", prompt)
+        self.assertIn("do not merge nearby separate symbols", prompt)
+
+    def test_request_records_ollama_timing_metrics(self):
+        from PIL import Image
+        detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
+        response = unittest.mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "message": {"content": '{"entities": []}'},
+            "total_duration": 2_000_000_000,
+            "load_duration": 100_000_000,
+            "prompt_eval_duration": 1_200_000_000,
+            "eval_duration": 500_000_000,
+            "prompt_eval_count": 320,
+            "eval_count": 18,
+            "done_reason": "stop",
+        }
+        with patch("perception.vision_entity_detector.requests.post", return_value=response):
+            result = detector._request_tile(Image.new("RGB", (320, 200)))
+        self.assertEqual(result, {"entities": []})
+        metric = detector.inference_metrics[0]
+        self.assertEqual(metric["ollama_total_ms"], 2000.0)
+        self.assertEqual(metric["ollama_load_ms"], 100.0)
+        self.assertEqual(metric["ollama_prompt_eval_ms"], 1200.0)
+        self.assertEqual(metric["ollama_generation_ms"], 500.0)
+        self.assertEqual(metric["prompt_eval_tokens"], 320)
+        self.assertEqual(metric["generation_tokens"], 18)
+        self.assertEqual(metric["done_reason"], "stop")
 
     def test_proposals_are_mapped_to_full_screenshot_coordinates(self):
         responses = [
