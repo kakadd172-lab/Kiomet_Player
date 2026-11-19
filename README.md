@@ -148,6 +148,16 @@ for observation in observations:
 
 A proposal category must be `tower` or `unit`. Each result includes normalized and pixel bounding boxes, ranked candidates, similarity scores, and optional dominant colour. A rejected/ambiguous result has no accepted identity. This API classifies supplied regions; it does not find regions in a full screenshot.
 
+### Run experimental full-screen entity detection
+
+The tiled detector asks the configured local vision model to propose tower/unit bounding boxes in overlapping screenshot regions. Each proposal is then checked by the deterministic icon recognizers. It saves a JSON report and an annotated screenshot under the ignored `benchmark_results/entity_detection/` directory:
+
+```bash
+python -m perception.run_entity_detection
+```
+
+Pass `--image path/to/screenshot.png` to select a screenshot, `--model qwen3-vl:4b-instruct` to select the Ollama model, or `--method grayscale` to change the icon-matching method. The default model is `qwen3-vl:4b-instruct`; it must already be available in Ollama. Green boxes indicate accepted icon identities and amber boxes indicate uncertain matches. This is an experimental proposal pipeline: the vision model can miss objects or propose false boxes, and deterministic matching cannot correct a badly placed crop. Validate detections against manually labelled full screenshots before relying on them.
+
 ### Run the labelled icon-matcher benchmark
 
 The benchmark compares manually labelled screenshot crops against all registered tower or unit templates. It writes a JSON report to the ignored `benchmark_results/` directory:
