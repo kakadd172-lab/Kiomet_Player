@@ -158,7 +158,7 @@ class ScreenEntityRecognizer:
                     region_id=proposal.region_id,
                     category=proposal.category,
                     bbox=(x, y, box_width, box_height),
-                    pixel_bbox=(left, top, right, bottom),
+                    pixel_bbox=(box_left, box_top, box_right, box_bottom),
                     accepted=result.accepted,
                     status=result.status,
                     icon_id=result.icon_id,
