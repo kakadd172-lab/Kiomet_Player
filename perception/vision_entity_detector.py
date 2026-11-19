@@ -196,9 +196,12 @@ class VisionEntityDetector:
         )
 
     def _request_tile(self, tile: Image.Image) -> dict[str, Any]:
-        scale = self.upscale
-        if self.max_image_side is not None:
-            scale = min(scale, self.max_image_side / max(tile.width, tile.height))
+        # Native mode preserves the exact source pixels: no downscaling
+        # and no optional upscaling.
+        scale = 1.0 if self.max_image_side is None else min(
+            self.upscale,
+            self.max_image_side / max(tile.width, tile.height),
+        )
         if scale != 1:
             tile = tile.resize(
                 (max(1, round(tile.width * scale)), max(1, round(tile.height * scale))),
