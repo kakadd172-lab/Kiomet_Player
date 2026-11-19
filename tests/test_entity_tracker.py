@@ -82,6 +82,49 @@ class EntityTrackerTests(unittest.TestCase):
         self.assertEqual(len(visible), 1)
         self.assertEqual(visible[0].track_id, nearer_track_id)
 
+    def test_history_records_movement_and_missing_frames(self):
+        tracker = EntityTracker(max_missed_frames=2)
+        tracker.update([self.observation(0.10)])
+        tracker.update([self.observation(0.12)])
+        tracker.update([])
+
+        history = tracker.history("entity-000001")
+        self.assertEqual([entry.frame for entry in history], [1, 2, 3])
+        self.assertEqual(history[0].bbox[0], 0.10)
+        self.assertEqual(history[1].bbox[0], 0.12)
+        self.assertTrue(history[0].visible)
+        self.assertTrue(history[1].visible)
+        self.assertFalse(history[2].visible)
+        self.assertEqual(history[2].missed_frames, 1)
+        self.assertEqual(history[2].bbox[0], 0.12)
+
+    def test_history_survives_track_expiry(self):
+        tracker = EntityTracker(max_missed_frames=1)
+        tracker.update([self.observation()])
+        tracker.update([])
+        tracker.update([])
+
+        self.assertEqual(tracker.snapshot(), ())
+        history = tracker.history("entity-000001")
+        self.assertEqual(len(history), 3)
+        self.assertFalse(history[-1].visible)
+        self.assertEqual(history[-1].missed_frames, 2)
+
+    def test_history_is_bounded_per_track(self):
+        tracker = EntityTracker(max_history_per_track=2)
+        tracker.update([self.observation(0.10)])
+        tracker.update([self.observation(0.11)])
+        tracker.update([self.observation(0.12)])
+
+        history = tracker.history("entity-000001")
+        self.assertEqual([entry.frame for entry in history], [2, 3])
+
+    def test_reset_clears_history(self):
+        tracker = EntityTracker()
+        tracker.update([self.observation()])
+        tracker.reset()
+        self.assertEqual(tracker.history("entity-000001"), ())
+
     def test_invalid_observation_does_not_advance_frame(self):
         tracker = EntityTracker()
         with self.assertRaises(ValueError):
