@@ -177,7 +177,7 @@ for screenshot_path in screenshot_paths:
         )
 ```
 
-The default tracker retains a track for up to two missed frames before expiring it. This is a short-term association layer, not a full game-state history or a guarantee that a track represents the same real game object indefinitely. Validate it with labelled multi-frame sequences before using its IDs for decisions.
+The default tracker retains a track for up to two missed frames before expiring it. Each track also keeps a bounded history (120 frames by default), including observed positions and explicitly marked missing frames. Retrieve it with `pipeline.history(entity.track_id)`. The history is useful for movement analysis and debugging, but it is not a full game-state history or a guarantee that a track represents the same real game object indefinitely. Validate it with labelled multi-frame sequences before using its IDs for decisions.
 
 ### Run the labelled icon-matcher benchmark
 
