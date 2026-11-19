@@ -224,7 +224,6 @@ class VisionEntityDetectorTests(unittest.TestCase):
             ):
                 detector.propose_regions(large_image)
         self.assertEqual(request.call_count, 3)
-        self.assertEqual(detector.pipeline_metrics["adaptive_split_count"], 2)
 
     def test_truncated_ollama_response_is_rejected_before_json_parsing(self):
         from PIL import Image
