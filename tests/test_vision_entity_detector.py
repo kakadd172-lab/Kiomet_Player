@@ -6,6 +6,7 @@ import numpy as np
 from perception.vision_entity_detector import (
     VisionEntityDetector,
     _tile_bounds,
+    _adaptive_child_bounds,
     _timing_summary,
 )
 
@@ -166,11 +167,12 @@ class VisionEntityDetectorTests(unittest.TestCase):
         with patch.object(detector, "_request_tile", side_effect=responses) as request:
             proposals = detector.propose_regions(large_image)
 
-        self.assertEqual(request.call_count, 5)
+        self.assertEqual(request.call_count, 3)
         self.assertEqual(len(proposals), 1)
         self.assertAlmostEqual(proposals[0].proposal.x, 0.14)
-        self.assertAlmostEqual(proposals[0].proposal.y, 0.14)
+        self.assertAlmostEqual(proposals[0].proposal.y, 0.25)
         self.assertAlmostEqual(proposals[0].proposal.width, 0.112)
+        self.assertAlmostEqual(proposals[0].proposal.height, 0.2)
         self.assertEqual(detector.pipeline_metrics["adaptive_split_count"], 1)
 
     def test_adaptive_retry_still_fails_if_a_child_tile_truncates(self):
@@ -200,6 +202,23 @@ class VisionEntityDetectorTests(unittest.TestCase):
         with patch("perception.vision_entity_detector.requests.post", return_value=response):
             with self.assertRaisesRegex(ValueError, "truncated.*output-token limit"):
                 detector._request_tile(Image.new("RGB", (320, 200)))
+
+    def test_adaptive_subdivision_splits_only_the_longer_axis(self):
+        self.assertEqual(
+            _adaptive_child_bounds(200, 200, 0.12),
+            [
+                ("left", 0, 0, 112, 200),
+                ("right", 88, 0, 200, 200),
+            ],
+        )
+        self.assertEqual(
+            _adaptive_child_bounds(112, 200, 0.12),
+            [
+                ("top", 0, 0, 112, 112),
+                ("bottom", 0, 88, 112, 200),
+            ],
+        )
+        self.assertEqual(_adaptive_child_bounds(112, 112, 0.12), [])
 
     def test_tiles_cover_full_image_with_overlap(self):
         tiles = _tile_bounds(100, 100, 0.12)
