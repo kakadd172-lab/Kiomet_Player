@@ -223,7 +223,10 @@ class ImageMatcher:
             key=lambda index: int(stats[index, cv2.CC_STAT_AREA]),
         )
         dominant = np.where(labels == largest, 255, 0).astype(np.uint8)
-        return cls._normalize_shape(dominant)
+        # ``shape`` is already normalized to SHAPE_SIZE by _candidate_shape.
+        # Re-normalizing it here adds a second padding/rescale pass and changes
+        # the silhouette even when the smaller components were already removed.
+        return dominant
 
     @staticmethod
     def _shape_similarity(candidate: np.ndarray, template: np.ndarray) -> float:
