@@ -129,8 +129,11 @@ class ImageMatcher:
         image: np.ndarray | str | Path,
         *,
         filter_saturation: bool = True,
+        contrast_fraction: float = 0.45,
     ) -> np.ndarray:
-        """Extract bright icon strokes, optionally suppressing saturated glow."""
+        """Extract bright icon strokes with configurable relative brightness."""
+        if not 0.0 <= contrast_fraction <= 1.0:
+            raise ValueError("contrast_fraction must be between 0 and 1")
         grayscale = cls._to_grayscale(image)
 
         if isinstance(image, (str, Path)):
@@ -166,7 +169,7 @@ class ImageMatcher:
         otsu_threshold, _ = cv2.threshold(
             grayscale, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
         )
-        contrast_threshold = minimum + (maximum - minimum) * 0.45
+        contrast_threshold = minimum + (maximum - minimum) * contrast_fraction
         threshold = max(float(otsu_threshold), float(contrast_threshold))
         foreground_mask = grayscale > threshold
         if filter_saturation:
@@ -254,6 +257,11 @@ class ImageMatcher:
             (
                 self._candidate_shape(image, filter_saturation=True),
                 self._candidate_shape(image, filter_saturation=False),
+                # A high-brightness pass tests whether pale glyph strokes can
+                # be separated from the darker saturated territory marker.
+                self._candidate_shape(
+                    image, filter_saturation=False, contrast_fraction=0.72
+                ),
             )
             if method == "shape" else ()
         )
@@ -264,9 +272,9 @@ class ImageMatcher:
                 continue
 
             if method == "shape":
-                # Icon strokes can themselves be coloured. Evaluate both the
-                # glow-suppressed and luminance-only masks, then retain the
-                # stronger geometric match instead of discarding valid strokes.
+                # Compare conservative saturation filtering, ordinary
+                # luminance, and a high-brightness pass. The third mask is
+                # intended to isolate pale glyph strokes from darker markers.
                 score = max(
                     self._shape_similarity(candidate_shape, template.shape)
                     for candidate_shape in candidate_shapes
