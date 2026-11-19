@@ -70,6 +70,18 @@ class EntityTrackerTests(unittest.TestCase):
         # Both observations were assigned to existing tracks, not new IDs.
         self.assertTrue(all(item.first_seen_frame == 1 for item in result))
 
+    def test_equal_overlap_prefers_nearer_track(self):
+        tracker = EntityTracker(min_iou=0.1, max_center_distance=0.0)
+        first = tracker.update([
+            EntityObservation("tower", (0.35, 0.1, 0.07, 0.1)),
+            EntityObservation("tower", (0.20, 0.1, 0.24, 0.1)),
+        ])
+        nearer_track_id = first[0].track_id
+        tracker.update([EntityObservation("tower", (0.40, 0.1, 0.1, 0.1))])
+        visible = tracker.snapshot(include_missing=False)
+        self.assertEqual(len(visible), 1)
+        self.assertEqual(visible[0].track_id, nearer_track_id)
+
     def test_invalid_observation_does_not_advance_frame(self):
         tracker = EntityTracker()
         with self.assertRaises(ValueError):
