@@ -14,7 +14,8 @@
     "The separate entities_20261119_173032.png image contains detector-debug overlays and is excluded from clean evaluation candidates.",
     "Landing-page and help-page screenshots are excluded.",
     "Four additional November 19 observer captures were visually inspected and added: 180021, 180027, 180032, and 180037. They are consecutive views of one gameplay state/session; 180016 is a menu/landing screen and is excluded.",
-    "The 2026-11-18 225444 capture was visually confirmed as an in-game map and added after the initial ten-image inventory; 225434 and 225439 are landing-page captures and remain excluded."
+    "The 2026-11-18 225444 capture was visually confirmed as an in-game map and added after the initial ten-image inventory; 225434 and 225439 are landing-page captures and remain excluded.",
+    "PNG IHDR headers were read directly from all fifteen source files; every selected candidate is 1440x900. This confirms consistent source dimensions without resizing or altering the originals."
   ],
   "screenshots": [
     {
@@ -24,7 +25,9 @@
       "source_bytes": 215655,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225444.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225449.png",
@@ -33,7 +36,9 @@
       "source_bytes": 130859,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225449.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225454.png",
@@ -42,7 +47,9 @@
       "source_bytes": 147572,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225454.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225459.png",
@@ -51,7 +58,9 @@
       "source_bytes": 159418,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225459.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225504.png",
@@ -60,7 +69,9 @@
       "source_bytes": 160139,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225504.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225509.png",
@@ -69,7 +80,9 @@
       "source_bytes": 160490,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225509.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225514.png",
@@ -78,7 +91,9 @@
       "source_bytes": 182918,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225514.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225519.png",
@@ -87,7 +102,9 @@
       "source_bytes": 183063,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225519.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225524.png",
@@ -96,7 +113,9 @@
       "source_bytes": 183791,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225524.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225530.png",
@@ -105,7 +124,9 @@
       "source_bytes": 183702,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225530.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261118_225535.png",
@@ -114,7 +135,9 @@
       "source_bytes": 189741,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225535.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261119_180021.png",
@@ -123,7 +146,9 @@
       "source_bytes": 186893,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/KiometAI/screenshots/screen_20261119_180021.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261119_180027.png",
@@ -132,7 +157,9 @@
       "source_bytes": 199424,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/KiometAI/screenshots/screen_20261119_180027.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261119_180032.png",
@@ -141,7 +168,9 @@
       "source_bytes": 201891,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/KiometAI/screenshots/screen_20261119_180032.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     },
     {
       "image": "screen_20261119_180037.png",
@@ -150,7 +179,9 @@
       "source_bytes": 202294,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/KiometAI/screenshots/screen_20261119_180037.png",
       "status": "candidate_unannotated",
-      "fully_annotated": false
+      "fully_annotated": false,
+      "image_width": 1440,
+      "image_height": 900
     }
   ]
 }
