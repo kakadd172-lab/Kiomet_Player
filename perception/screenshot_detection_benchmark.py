@@ -193,6 +193,23 @@ def _normalize_name(value: str | None) -> str:
     return re.sub(r"[^a-z0-9]+", "", value.casefold()) if isinstance(value, str) else ""
 
 
+def _category_metrics_from_totals(
+    totals_by_category: dict[str, dict[str, int]],
+) -> dict[str, dict[str, int | float | None]]:
+    """Add precision, recall and F1 to accumulated per-category counts."""
+    return {
+        category: {
+            **totals,
+            **_rates(
+                totals["true_positives"],
+                totals["false_positives"],
+                totals["false_negatives"],
+            ),
+        }
+        for category, totals in totals_by_category.items()
+    }
+
+
 def _category_metrics(
     expected: list[dict[str, Any]],
     predicted: list[dict[str, Any]],
