@@ -99,6 +99,23 @@ class TrackedEntityPipelineTests(unittest.TestCase):
         self.assertEqual(pipeline.snapshot(include_missing=False)[0].track_id, first.track_id)
         self.assertEqual(len(pipeline.last_detections), 1)
 
+    def test_exposes_per_entity_frame_history(self):
+        detector = FakeDetector([
+            [detection(x=0.10)],
+            [detection(x=0.12)],
+            [],
+        ])
+        pipeline = TrackedEntityPipeline(detector=detector, tracker=EntityTracker())
+        first = pipeline.process("frame-1")[0]
+        pipeline.process("frame-2")
+        pipeline.process("frame-3")
+
+        history = pipeline.history(first.track_id)
+        self.assertEqual([entry.frame for entry in history], [1, 2, 3])
+        self.assertEqual(history[0].bbox[0], 0.10)
+        self.assertEqual(history[1].bbox[0], 0.12)
+        self.assertFalse(history[2].visible)
+
     def test_passes_detector_options_through(self):
         detector = FakeDetector([[]])
         pipeline = TrackedEntityPipeline(detector=detector, tracker=EntityTracker())
