@@ -51,7 +51,9 @@ class ScreenEntityRecognizerTests(unittest.TestCase):
         self.assertEqual(result.category, "tower")
         self.assertEqual(result.bbox, (0.2, 0.2, 0.3, 0.4))
         self.assertEqual(result.pixel_bbox, (40, 20, 100, 60))
-        self.assertEqual(self.towers.calls[0][0].shape, (40, 60, 3))
+        self.assertEqual(self.towers.calls[0][0].shape, (60, 90, 3))
+        # The original proposal remains the reported box; the matcher crop adds context.
+        self.assertEqual(self.towers.calls[0][0][10:50, 15:75].shape, (40, 60, 3))
         self.assertEqual(self.towers.calls[0][0][0, 0].tolist(), [10, 80, 160])
         self.assertEqual(result.icon_id, "tower.example")
         self.assertEqual(result.candidates[0].score, 0.91)
