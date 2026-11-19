@@ -29,6 +29,25 @@ class TrackingBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["fragmentations"], 0)
         self.assertEqual(result["mean_matched_iou"], 1.0)
 
+    def test_reports_entity_movement_and_predicted_track_lifetimes(self):
+        frames = [
+            {"frame_index": 1, "expected": [entity("A", 0.1)], "predicted": [entity("p", 0.1, track_id="T1")]},
+            {"frame_index": 2, "expected": [entity("A", 0.2)], "predicted": [entity("p", 0.2, track_id="T1")]},
+            {"frame_index": 3, "expected": [entity("A", 0.3)], "predicted": [entity("p", 0.3, track_id="T1")]},
+        ]
+        result = evaluate_tracking_frames(frames)
+        entity_stats = result["ground_truth_entity_lifetimes"][0]
+        self.assertEqual(entity_stats["ground_truth_id"], "A")
+        self.assertEqual(entity_stats["visible_frames"], 3)
+        self.assertEqual(entity_stats["matched_frames"], 3)
+        self.assertEqual(entity_stats["track_ids_used"], ["T1"])
+        self.assertAlmostEqual(entity_stats["center_path_length"], 0.2)
+        track_stats = result["predicted_track_lifetimes"][0]
+        self.assertEqual(track_stats["first_frame"], 1)
+        self.assertEqual(track_stats["last_frame"], 3)
+        self.assertEqual(track_stats["observed_frames"], 3)
+        self.assertEqual(track_stats["span_frames"], 3)
+
     def test_changed_track_id_counts_identity_switch(self):
         frames = [
             {"frame_index": 1, "expected": [entity("A")], "predicted": [entity("p", track_id="T1")]},
