@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import json
 import warnings
+from time import perf_counter
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -154,28 +155,40 @@ class VisionEntityDetector:
         self.min_detector_confidence = float(min_detector_confidence)
         self.duplicate_iou = float(duplicate_iou)
         self.screen_recognizer = screen_recognizer or ScreenEntityRecognizer()
+        self.inference_metrics: list[dict[str, Any]] = []
+        self.pipeline_metrics: dict[str, Any] = {}
 
     @staticmethod
     def _prompt(tile_width: int, tile_height: int) -> str:
         return (
-            "Inspect the attached image as a cropped section of a Kiomet strategy game. "
-            "Detect only clearly visible individual game-world tower/building symbols and "
-            "military unit symbols. A tower is a stationary structure icon; a unit is a "
-            "mobile troop/vehicle/ship icon. Use category 'unknown' when the object cannot "
-            "confidently be distinguished. Never label every object as a tower by default. "
-            "Ignore territory fills and borders, roads or connection lines, text, counters, "
-            "buttons, minimap decorations, shadows, glows, and isolated dots. "
-            "Return one tight rectangle per visible symbol; include the complete icon but "
-            "as little surrounding background as possible. Do not invent objects or boxes. "
+            "You are inspecting a screenshot from the strategy game Kiomet. Find individual "
+            "game-world entities visible in this image crop. Return one box for each distinct "
+            "visible entity, including neutral/grey entities and coloured/player-controlled "
+            "entities. Category 'tower' means a stationary game structure or building. "
+            "Category 'unit' means any mobile or special game entity represented by a unit "
+            "marker, including the King and special entities; do not restrict this category "
+            "to conventional vehicles, ships, or soldiers. Use 'unknown' only when a visible "
+            "game entity is clear but its tower-versus-unit category is genuinely uncertain. "
+            "Do not identify exact names; identity is handled by a separate recognizer. "
+            "Look for the actual compact game symbols/markers on the map, not just large "
+            "objects. Include symbols on both neutral and owned territory. "
+            "Do not report territory shapes, borders, roads, connection lines, text, numbers, "
+            "standalone counters, buttons, panels, minimap decorations, or isolated dots as "
+            "entities. A glow, shadow, circular badge, or coloured background is not an entity "
+            "by itself, but do not discard an icon merely because it has a glow or badge behind it. "
+            "Return a tight box around the complete visible symbol, including meaningful "
+            "detached parts that clearly belong to it, while excluding most surrounding map. "
+            "Do not invent entities and do not merge nearby separate symbols. "
             f"The attached crop is exactly {tile_width} pixels wide and {tile_height} pixels "
             "high. Coordinates must be normalized fractions from 0 to 1 relative to this "
-            "attached crop only (not the original full screenshot), with (0,0) at its "
-            "top-left. bbox.x and bbox.y are the top-left corner; bbox.width and bbox.height "
-            "are dimensions, not bottom-right coordinates. Keep every box fully inside the crop. "
-            "Return JSON only, with an 'entities' array. Each item must contain category, "
-            "bbox with numeric x/y/width/height, and a numeric confidence from 0 to 1. "
-            "If no clear symbols are visible, return an empty entities array. "
-            "Keep the JSON compact: no markdown, explanations, or extra keys. Do not copy example coordinates or use a fixed confidence for every detection."
+            "attached crop only, not the original screenshot. Origin (0,0) is its top-left. "
+            "bbox.x and bbox.y are the top-left corner; bbox.width and bbox.height are "
+            "dimensions, not bottom-right coordinates. Keep boxes fully inside this crop. "
+            "Return JSON only with an 'entities' array. Every item must contain category "
+            "('tower', 'unit', or 'unknown'), bbox with numeric x/y/width/height, and a "
+            "numeric confidence from 0 to 1. Return all clearly visible entities rather than "
+            "stopping after a small handful. If none are visible, return an empty array. "
+            "Do not use fixed confidence values, copy example coordinates, or add explanations."
         )
 
     def _request_tile(self, tile: Image.Image) -> dict[str, Any]:
@@ -185,9 +198,12 @@ class VisionEntityDetector:
                 (max(1, round(tile.width * scale)), max(1, round(tile.height * scale))),
                 Image.Resampling.LANCZOS,
             )
+        preprocessing_started = perf_counter()
         buffer = BytesIO()
         tile.save(buffer, format="PNG")
         encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+        preprocessing_ms = (perf_counter() - preprocessing_started) * 1000.0
+        request_started = perf_counter()
         response = requests.post(
             self.ollama_url,
             json={
@@ -202,7 +218,7 @@ class VisionEntityDetector:
                     "properties": {
                         "entities": {
                             "type": "array",
-                            "maxItems": 16,
+                            "maxItems": 64,
                             "items": {
                                 "type": "object",
                                 "properties": {
@@ -227,7 +243,7 @@ class VisionEntityDetector:
                 },
                 "stream": False,
                 "keep_alive": "5m",
-                "options": {"temperature": 0.1, "num_predict": 1200, "num_thread": self.num_threads},
+                "options": {"temperature": 0.1, "num_predict": 1800, "num_thread": self.num_threads},
             },
             timeout=self.timeout,
         )
@@ -249,9 +265,32 @@ class VisionEntityDetector:
             ) from error
         if not isinstance(parsed, dict) or not isinstance(parsed.get("entities"), list):
             raise ValueError("Vision model JSON must contain an entities array")
+
+        def duration_ms(field: str) -> float | None:
+            value = payload.get(field)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                return None
+            return round(float(value) / 1_000_000.0, 3)
+
+        self.inference_metrics.append({
+            "tile": f"{tile.width}x{tile.height}",
+            "input_width": tile.width,
+            "input_height": tile.height,
+            "preprocessing_ms": round(preprocessing_ms, 3),
+            "request_wall_ms": round((perf_counter() - request_started) * 1000.0, 3),
+            "ollama_total_ms": duration_ms("total_duration"),
+            "ollama_load_ms": duration_ms("load_duration"),
+            "ollama_prompt_eval_ms": duration_ms("prompt_eval_duration"),
+            "ollama_generation_ms": duration_ms("eval_duration"),
+            "prompt_eval_tokens": payload.get("prompt_eval_count"),
+            "generation_tokens": payload.get("eval_count"),
+            "done_reason": payload.get("done_reason"),
+        })
         return parsed
 
     def propose_regions(self, screenshot: np.ndarray | str | Path) -> list[VisionProposal]:
+        pipeline_started = perf_counter()
+        self.inference_metrics = []
         image = _load_rgb(screenshot)
         width, height = image.size
         proposals: list[VisionProposal] = []
@@ -328,6 +367,12 @@ class VisionEntityDetector:
             ):
                 continue
             deduplicated.append(candidate)
+        self.pipeline_metrics = {
+            "source_width": width,
+            "source_height": height,
+            "tile_count": len(tiles),
+            "proposal_duration_ms": round((perf_counter() - pipeline_started) * 1000.0, 3),
+        }
         return deduplicated
 
     def detect(
@@ -342,6 +387,7 @@ class VisionEntityDetector:
     ) -> list[VerifiedEntity]:
         """Run tiled region proposals followed by deterministic icon matching."""
         proposals = self.propose_regions(screenshot)
+        recognition_started = perf_counter()
         observations = self.screen_recognizer.recognize_regions(
             screenshot,
             [item.proposal for item in proposals],
@@ -350,6 +396,13 @@ class VisionEntityDetector:
             min_score=min_score,
             min_margin=min_margin,
             detect_colour=detect_colour,
+        )
+        self.pipeline_metrics["recognition_duration_ms"] = round(
+            (perf_counter() - recognition_started) * 1000.0, 3
+        )
+        self.pipeline_metrics["total_duration_ms"] = round(
+            self.pipeline_metrics["proposal_duration_ms"]
+            + self.pipeline_metrics["recognition_duration_ms"], 3
         )
         return [
             VerifiedEntity(
