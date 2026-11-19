@@ -86,10 +86,22 @@ class VisionEntityDetectorTests(unittest.TestCase):
         }
         with patch("perception.vision_entity_detector.requests.post", return_value=response) as request:
             detector._request_tile(Image.new("RGB", (320, 200)))
-        self.assertEqual(
-            request.call_args.kwargs["json"]["options"]["num_predict"],
-            4096,
+        options = request.call_args.kwargs["json"]["options"]
+        self.assertEqual(options["num_predict"], 4096)
+        self.assertNotIn("num_thread", options)
+
+    def test_explicit_cpu_thread_override_is_sent_to_ollama(self):
+        from PIL import Image
+        detector = VisionEntityDetector(
+            screen_recognizer=self.screen_recognizer,
+            num_threads=6,
         )
+        response = unittest.mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"message": {"content": '{"entities": []}'}}
+        with patch("perception.vision_entity_detector.requests.post", return_value=response) as request:
+            detector._request_tile(Image.new("RGB", (320, 200)))
+        self.assertEqual(request.call_args.kwargs["json"]["options"]["num_thread"], 6)
 
     def test_truncated_ollama_response_is_rejected_before_json_parsing(self):
         from PIL import Image
@@ -209,9 +221,10 @@ class VisionEntityDetectorTests(unittest.TestCase):
             "eval_count": 18,
             "done_reason": "stop",
         }
-        with patch("perception.vision_entity_detector.requests.post", return_value=response):
+        with patch("perception.vision_entity_detector.requests.post", return_value=response) as request:
             result = detector._request_tile(Image.new("RGB", (320, 200)))
         self.assertEqual(result, {"entities": []})
+        self.assertNotIn("num_thread", request.call_args.kwargs["json"]["options"])
         metric = detector.inference_metrics[0]
         self.assertEqual(metric["source_width"], 320)
         self.assertEqual(metric["source_height"], 200)
