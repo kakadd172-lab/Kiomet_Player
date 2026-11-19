@@ -99,6 +99,8 @@ def evaluate_tracking_frames(
     total_expected = total_predicted = true_positives = 0
     matched_ious: list[float] = []
     per_frame = []
+    ground_truth_stats: dict[str, dict[str, Any]] = {}
+    predicted_track_frames: dict[str, list[int]] = {}
 
     previous_frame_index = None
     for frame_number, frame in enumerate(frames):
@@ -127,6 +129,7 @@ def evaluate_tracking_frames(
             if item["track_id"] in predicted_ids:
                 raise ValueError("predicted track IDs must be unique within each frame")
             predicted_ids.add(item["track_id"])
+            predicted_track_frames.setdefault(item["track_id"], []).append(frame_index)
             if item.get("category") not in {"tower", "unit"}:
                 raise ValueError("predicted category must be tower or unit")
             _box(item["bbox"])
@@ -150,12 +153,29 @@ def evaluate_tracking_frames(
                 if gap_since_match.get(entity_id, 0) > 0 and last_track.get(entity_id) == track_id:
                     reacquisitions += 1
             last_track[entity_id] = track_id
+            stats = ground_truth_stats.setdefault(entity_id, {
+                "visible_frames": 0,
+                "matched_frames": 0,
+                "track_ids": set(),
+                "matched_centers": [],
+            })
+            stats["matched_frames"] += 1
+            stats["track_ids"].add(track_id)
+            bx, by, bw, bh = _box(guess["bbox"])
+            stats["matched_centers"].append((frame_index, bx + bw / 2, by + bh / 2))
             seen_expected.add(entity_id)
             was_matched[entity_id] = True
             gap_since_match[entity_id] = 0
 
         for ei, truth in enumerate(expected):
             entity_id = truth["id"]
+            stats = ground_truth_stats.setdefault(entity_id, {
+                "visible_frames": 0,
+                "matched_frames": 0,
+                "track_ids": set(),
+                "matched_centers": [],
+            })
+            stats["visible_frames"] += 1
             if ei not in matched_expected:
                 seen_expected.add(entity_id)
                 was_matched[entity_id] = False
@@ -180,6 +200,31 @@ def evaluate_tracking_frames(
 
     fp = total_predicted - true_positives
     fn = total_expected - true_positives
+    entity_lifetimes = []
+    for entity_id, stats in sorted(ground_truth_stats.items()):
+        centers = stats["matched_centers"]
+        steps = [
+            ((right[1] - left[1]) ** 2 + (right[2] - left[2]) ** 2) ** 0.5
+            for left, right in zip(centers, centers[1:])
+        ]
+        entity_lifetimes.append({
+            "ground_truth_id": entity_id,
+            "visible_frames": stats["visible_frames"],
+            "matched_frames": stats["matched_frames"],
+            "track_ids_used": sorted(stats["track_ids"]),
+            "center_path_length": round(sum(steps), 6),
+            "mean_center_step": round(sum(steps) / len(steps), 6) if steps else None,
+        })
+    track_lifetimes = [
+        {
+            "track_id": track_id,
+            "first_frame": min(indices),
+            "last_frame": max(indices),
+            "observed_frames": len(indices),
+            "span_frames": max(indices) - min(indices) + 1,
+        }
+        for track_id, indices in sorted(predicted_track_frames.items())
+    ]
     precision = true_positives / (true_positives + fp) if true_positives + fp else None
     recall = true_positives / (true_positives + fn) if true_positives + fn else None
     f1 = 2 * precision * recall / (precision + recall) if precision is not None and recall is not None and precision + recall else None
@@ -198,6 +243,8 @@ def evaluate_tracking_frames(
         "fragmentations": fragmentations,
         "reacquisitions": reacquisitions,
         "unique_ground_truth_entities": len(seen_expected),
+        "ground_truth_entity_lifetimes": entity_lifetimes,
+        "predicted_track_lifetimes": track_lifetimes,
         "per_frame": per_frame,
         "limitations": [
             "Identity metrics require stable ground-truth IDs across every frame in a sequence.",
