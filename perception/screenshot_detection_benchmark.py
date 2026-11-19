@@ -193,22 +193,6 @@ def _normalize_name(value: str | None) -> str:
     return re.sub(r"[^a-z0-9]+", "", value.casefold()) if isinstance(value, str) else ""
 
 
-def _category_metrics_from_totals(
-    totals_by_category: dict[str, dict[str, int]],
-) -> dict[str, dict[str, int | float | None]]:
-    return {
-        category: {
-            **totals,
-            **_rates(
-                totals["true_positives"],
-                totals["false_positives"],
-                totals["false_negatives"],
-            ),
-        }
-        for category, totals in totals_by_category.items()
-    }
-
-
 def _category_metrics(
     expected: list[dict[str, Any]],
     predicted: list[dict[str, Any]],
@@ -300,14 +284,11 @@ def run_benchmark(
         total_tp += tp
         total_fp += fp
         total_fn += fn
-        for category in VALID_CATEGORIES:
-            category_expected = [item for item in expected if item["category"] == category]
-            category_predicted = [item for item in predictions if item["category"] == category]
-            category_match = match_entities(category_expected, category_predicted, iou_threshold)
+        for category, category_result in _category_metrics(expected, predictions, iou_threshold).items():
             totals = category_totals[category]
-            totals["true_positives"] += category_match["true_positives"]
-            totals["false_positives"] += category_match["false_positives"]
-            totals["false_negatives"] += category_match["false_negatives"]
+            totals["true_positives"] += category_result["true_positives"]
+            totals["false_positives"] += category_result["false_positives"]
+            totals["false_negatives"] += category_result["false_negatives"]
         for match in matching["matches"]:
             if match["identity_scored"]:
                 identity_scored += 1
