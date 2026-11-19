@@ -147,7 +147,7 @@ def evaluate_tracking_frames(
             if entity_id in seen_expected and not was_matched.get(entity_id, False):
                 fragmentations += 1
                 frame_fragments += 1
-                if gap_since_match.get(entity_id, 0) > 0:
+                if gap_since_match.get(entity_id, 0) > 0 and last_track.get(entity_id) == track_id:
                     reacquisitions += 1
             last_track[entity_id] = track_id
             seen_expected.add(entity_id)
