@@ -63,7 +63,10 @@ From the repository root:
 ```
 
 The report includes detection precision/recall/F1, mean matched IoU, ID
-switches, fragmentations, reacquisitions, and per-frame counts. Spatial
+switches, fragmentations, reacquisitions, per-frame counts, per-entity visible
+and matched lifetimes, predicted-track lifetimes, and normalized center-path
+movement summaries. Movement is measured from matched predicted box centers; it
+is a screen-space diagnostic, not a world-coordinate velocity estimate. Spatial
 matching is category-aware and uses maximum-cardinality one-to-one assignment
 at the selected IoU threshold.
 
