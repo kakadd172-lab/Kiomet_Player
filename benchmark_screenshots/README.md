@@ -86,16 +86,19 @@ meaningful.
 
 ## Existing screenshot sources
 
-A first-pass visual review of the public
-[ForTesting screenshot collection](https://github.com/kakadd172-lab/ForTesting/tree/kiomet-screenshots/screenshots)
-identified ten consecutive gameplay captures as candidates. Their exact source
-blob SHAs and paths are recorded in `source_inventory.json` so they can be
-verified without copying potentially identifying game-session details into
-this repository. The images are from one match/session, so they provide
-temporal variety but not ten independent match samples.
+Visual review of the public
+[ForTesting screenshot collection](https://github.com/kakadd172-lab/ForTesting/tree/kiomet-screenshots)
+identified fifteen gameplay candidates across two capture sessions: eleven
+from November 18 and four from November 19. The November 18 images are a
+short consecutive sequence; the November 19 images are also closely spaced
+observer captures, with some near-identical views. They provide temporal and
+scene variation, not fifteen independent matches. Their exact source blob
+SHAs, byte sizes, paths, and source links are recorded in
+`source_inventory.json` so they can be verified without copying the images
+into this repository prematurely.
 
-The detector-debug image with coloured bounding-box overlays and the
-landing/help-page captures are excluded. The ten candidates are not yet
-ground-truth labels: copy only reviewed, appropriate images into this folder,
-then annotate every visible tower and unit before setting
-`fully_annotated` to `true`.
+The detector-debug image with coloured bounding-box overlays, the
+landing/help-page captures, and the November 19 menu capture are excluded.
+The fifteen candidates are not ground-truth labels: copy only reviewed,
+appropriate images into this folder, then annotate every visible tower and
+unit before setting `fully_annotated` to `true`.
