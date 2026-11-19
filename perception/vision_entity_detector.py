@@ -143,18 +143,26 @@ class VisionEntityDetector:
         self.screen_recognizer = screen_recognizer or ScreenEntityRecognizer()
 
     @staticmethod
-    def _prompt() -> str:
+    def _prompt(tile_width: int, tile_height: int) -> str:
         return (
-            "Find visible GAME-WORLD entity symbols in this Kiomet strategy-game image crop. "
-            "Return compact bounding boxes around individual tower/building symbols or unit "
-            "symbols only. Do not box territory borders, connection lines, labels, UI buttons, "
-            "glows, or isolated decorative dots. Do not infer hidden objects. "
-            "For each entity return category 'tower' or 'unit'; use 'unknown' if unsure. "
-            "Coordinates x,y,width,height are normalized to THIS IMAGE, with origin at top-left. "
-            "Boxes must tightly contain the visible symbol, not its surrounding territory. "
-            "Confidence is a conservative visual estimate from 0 to 1. "
-            "Return JSON only in this exact shape: "
-            '{"entities":[{"category":"tower","bbox":{"x":0.1,"y":0.2,"width":0.05,"height":0.06},"confidence":0.8}]}'
+            "Inspect the attached image as a cropped section of a Kiomet strategy game. "
+            "Detect only clearly visible individual game-world tower/building symbols and "
+            "military unit symbols. A tower is a stationary structure icon; a unit is a "
+            "mobile troop/vehicle/ship icon. Use category 'unknown' when the object cannot "
+            "confidently be distinguished. Never label every object as a tower by default. "
+            "Ignore territory fills and borders, roads or connection lines, text, counters, "
+            "buttons, minimap decorations, shadows, glows, and isolated dots. "
+            "Return one tight rectangle per visible symbol; include the complete icon but "
+            "as little surrounding background as possible. Do not invent objects or boxes. "
+            f"The attached crop is exactly {tile_width} pixels wide and {tile_height} pixels "
+            "high. Coordinates must be normalized fractions from 0 to 1 relative to this "
+            "attached crop only (not the original full screenshot), with (0,0) at its "
+            "top-left. bbox.x and bbox.y are the top-left corner; bbox.width and bbox.height "
+            "are dimensions, not bottom-right coordinates. Keep every box fully inside the crop. "
+            "Return JSON only, with an 'entities' array. Each item must contain category, "
+            "bbox with numeric x/y/width/height, and a numeric confidence from 0 to 1. "
+            "If no clear symbols are visible, return an empty entities array. "
+            "Do not copy example coordinates or use a fixed confidence for every detection."
         )
 
     def _request_tile(self, tile: Image.Image) -> dict[str, Any]:
@@ -172,7 +180,7 @@ class VisionEntityDetector:
                 "model": self.model,
                 "messages": [{
                     "role": "user",
-                    "content": self._prompt(),
+                    "content": self._prompt(tile.width, tile.height),
                     "images": [encoded],
                 }],
                 "format": "json",
