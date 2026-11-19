@@ -86,7 +86,7 @@ def main() -> int:
     parser.add_argument("--model", default="qwen3-vl:4b-instruct")
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--max-image-side", type=int, default=960, help="Resize the model input so its longest side is at most this many pixels.")
-    parser.add_argument("--threads", type=int, default=8, help="Limit Ollama CPU inference threads.")
+    parser.add_argument("--threads", type=int, default=None, help="Optional Ollama CPU inference thread override; default lets Ollama choose.")
     parser.add_argument("--tiled", action="store_true", help="Use up to four overlapping image tiles instead of one full-screen pass.")
     parser.add_argument("--min-detector-confidence", type=float, default=0.35)
     parser.add_argument("--min-score", type=float, default=0.65)
