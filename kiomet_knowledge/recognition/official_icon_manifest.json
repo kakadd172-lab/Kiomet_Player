@@ -1,0 +1,303 @@
+{
+    "source": "https://github.com/SoftbearStudios/kiomet",
+    "license": "AGPL-3.0",
+    "description": "Official Kiomet tower and unit SVG icons extracted from the game's rendered galleries.",
+    "icons": [
+        {
+            "name": "Airfield",
+            "category": "towers",
+            "filename": "airfield.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\airfield.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Armory",
+            "category": "towers",
+            "filename": "armory.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\armory.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Artillery",
+            "category": "towers",
+            "filename": "artillery.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\artillery.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Barracks",
+            "category": "towers",
+            "filename": "barracks.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\barracks.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Bunker",
+            "category": "towers",
+            "filename": "bunker.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\bunker.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Centrifuge",
+            "category": "towers",
+            "filename": "centrifuge.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\centrifuge.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "City",
+            "category": "towers",
+            "filename": "city.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\city.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Cliff",
+            "category": "towers",
+            "filename": "cliff.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\cliff.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "EWS",
+            "category": "towers",
+            "filename": "ews.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\ews.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Factory",
+            "category": "towers",
+            "filename": "factory.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\factory.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Generator",
+            "category": "towers",
+            "filename": "generator.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\generator.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Headquarters",
+            "category": "towers",
+            "filename": "headquarters.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\headquarters.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Helipad",
+            "category": "towers",
+            "filename": "helipad.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\helipad.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Launcher",
+            "category": "towers",
+            "filename": "launcher.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\launcher.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Mine",
+            "category": "towers",
+            "filename": "mine.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\mine.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Projector",
+            "category": "towers",
+            "filename": "projector.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\projector.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Quarry",
+            "category": "towers",
+            "filename": "quarry.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\quarry.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Radar",
+            "category": "towers",
+            "filename": "radar.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\radar.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Rampart",
+            "category": "towers",
+            "filename": "rampart.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\rampart.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Reactor",
+            "category": "towers",
+            "filename": "reactor.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\reactor.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Refinery",
+            "category": "towers",
+            "filename": "refinery.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\refinery.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Rocket",
+            "category": "towers",
+            "filename": "rocket.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\rocket.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Runway",
+            "category": "towers",
+            "filename": "runway.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\runway.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Satellite",
+            "category": "towers",
+            "filename": "satellite.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\satellite.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Silo",
+            "category": "towers",
+            "filename": "silo.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\silo.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Town",
+            "category": "towers",
+            "filename": "town.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\town.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Village",
+            "category": "towers",
+            "filename": "village.svg",
+            "relative_path": "kiomet_knowledge\\assets\\towers\\official_svg\\village.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Shield",
+            "category": "units",
+            "filename": "shield.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\shield.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Fighter",
+            "category": "units",
+            "filename": "fighter.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\fighter.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Chopper",
+            "category": "units",
+            "filename": "chopper.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\chopper.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Bomber",
+            "category": "units",
+            "filename": "bomber.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\bomber.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Tank",
+            "category": "units",
+            "filename": "tank.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\tank.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Soldier",
+            "category": "units",
+            "filename": "soldier.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\soldier.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Shell",
+            "category": "units",
+            "filename": "shell.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\shell.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "EMP",
+            "category": "units",
+            "filename": "emp.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\emp.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "Nuke",
+            "category": "units",
+            "filename": "nuke.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\nuke.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        },
+        {
+            "name": "King",
+            "category": "units",
+            "filename": "king.svg",
+            "relative_path": "kiomet_knowledge\\assets\\troops\\official_svg\\king.svg",
+            "source": "https://github.com/SoftbearStudios/kiomet",
+            "license": "AGPL-3.0"
+        }
+    ]
+}

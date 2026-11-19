@@ -1,0 +1,31 @@
+﻿# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Generated diagnostics and temporary output
+benchmark_results/
+*.log
+*.tmp
+
+# Screenshots are maintained in the separate ForTesting repository
+screenshots/
+
+official_source_test/kiomet/
