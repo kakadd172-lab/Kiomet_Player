@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "source_screenshot": "screen_20261118_225509.png",
+  "label_source": "User-verified object identities and counts",
+  "cases": [
+    {
+      "name": "radar",
+      "image": "radar.png",
+      "category": "tower",
+      "expected_name": "Radar",
+      "enabled": true
+    },
+    {
+      "name": "barracks_upper",
+      "image": "barracks_upper.png",
+      "category": "tower",
+      "expected_name": "Barracks",
+      "enabled": true
+    },
+    {
+      "name": "barracks_lower",
+      "image": "barracks_lower.png",
+      "category": "tower",
+      "expected_name": "Barracks",
+      "enabled": true
+    },
+    {
+      "name": "mine",
+      "image": "mine.png",
+      "category": "tower",
+      "expected_name": "Mine",
+      "enabled": true
+    },
+    {
+      "name": "king_marker",
+      "image": "king_marker.png",
+      "category": "unit",
+      "expected_name": "King",
+      "enabled": false,
+      "skip_reason": "Current crop is visibly clipped at the top; recrop before using as a valid benchmark sample."
+    }
+  ]
+}
