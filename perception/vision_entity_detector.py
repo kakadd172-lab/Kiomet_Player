@@ -98,6 +98,31 @@ def _tile_bounds(width: int, height: int, overlap: float) -> list[tuple[str, int
     return result
 
 
+def _adaptive_child_bounds(
+    width: int,
+    height: int,
+    overlap: float,
+) -> list[tuple[str, int, int, int, int]]:
+    """Split only the longer eligible axis to keep recursive crops useful."""
+    if not isinstance(overlap, (int, float)) or isinstance(overlap, bool) or not 0 <= overlap < 0.5:
+        raise ValueError("overlap must be between 0 and 0.5")
+    if width >= height and width >= 128:
+        tile_width = int(round(width * (0.5 + overlap / 2)))
+        positions = sorted({0, max(0, width - tile_width)})
+        return [
+            ("left" if index == 0 else "right", left, 0, min(width, left + tile_width), height)
+            for index, left in enumerate(positions)
+        ]
+    if height >= 128:
+        tile_height = int(round(height * (0.5 + overlap / 2)))
+        positions = sorted({0, max(0, height - tile_height)})
+        return [
+            ("top" if index == 0 else "bottom", 0, top, width, min(height, top + tile_height))
+            for index, top in enumerate(positions)
+        ]
+    return []
+
+
 def _timing_summary(metrics: list[dict[str, Any]], field: str) -> dict[str, float | int | None]:
     """Summarize a timing field without treating missing Ollama timings as zero."""
     values = [
@@ -367,7 +392,7 @@ class VisionEntityDetector:
         width, height = image.size
         proposals: list[VisionProposal] = []
         adaptive_split_count = 0
-        max_adaptive_split_depth = 2
+        max_adaptive_split_depth = 4
 
         tiles = (
             [("full", 0, 0, width, height)]
@@ -391,8 +416,6 @@ class VisionEntityDetector:
                 can_split = (
                     is_truncated
                     and depth < max_adaptive_split_depth
-                    and tile.width >= 128
-                    and tile.height >= 128
                 )
                 if not can_split:
                     if is_truncated:
@@ -406,7 +429,7 @@ class VisionEntityDetector:
                 # Discard the incomplete parent response and retry its image as
                 # smaller overlapping crops. Every child must succeed; otherwise
                 # the frame still fails rather than returning partial detections.
-                child_bounds = _tile_bounds(tile.width, tile.height, self.overlap)
+                child_bounds = _adaptive_child_bounds(tile.width, tile.height, self.overlap)
                 if len(child_bounds) <= 1:
                     raise ValueError(
                         f"{error} Tile {tile_name!r} produced no smaller child crops."
