@@ -81,6 +81,60 @@ class TrackingReplayTests(unittest.TestCase):
             saved = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(saved["frames"][1]["source"], "02.png")
 
+    def test_replay_exports_raw_detection_and_recognition_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "screens"
+            self.make_image(source / "01.png")
+            pipeline = FakePipeline()
+            candidate = SimpleNamespace(
+                icon_id="tower_radar",
+                display_name="Radar",
+                score=0.91,
+            )
+            recognition = SimpleNamespace(
+                accepted=False,
+                status="ambiguous",
+                icon_id=None,
+                display_name=None,
+                top_score=0.91,
+                margin=0.02,
+                candidates=(candidate,),
+            )
+            proposal = SimpleNamespace(
+                region_id="full-1",
+                category="tower",
+                x=0.2,
+                y=0.3,
+                width=0.04,
+                height=0.05,
+            )
+            pipeline.last_detections = (
+                SimpleNamespace(
+                    proposal=proposal,
+                    tile_name="full",
+                    detector_confidence=0.88,
+                    recognition=recognition,
+                ),
+            )
+
+            report = run_replay(
+                source,
+                root / "replay.json",
+                pipeline=pipeline,
+            )
+
+            detection = report["frames"][0]["detections"][0]
+            self.assertEqual(detection["region_id"], "full-1")
+            self.assertEqual(detection["bbox"]["x"], 0.2)
+            self.assertEqual(detection["detector_confidence"], 0.88)
+            self.assertFalse(detection["recognition"]["accepted"])
+            self.assertEqual(detection["recognition"]["status"], "ambiguous")
+            self.assertEqual(
+                detection["recognition"]["candidates"][0]["icon_id"],
+                "tower_radar",
+            )
+
     def test_optional_annotations_are_written(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
