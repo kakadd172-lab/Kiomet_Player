@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -86,7 +86,7 @@ def main() -> int:
     parser.add_argument("--model", default="qwen3-vl:4b-instruct")
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--max-image-side", type=int, default=960, help="Resize the model input so its longest side is at most this many pixels.")
-    parser.add_argument("--threads", type=int, default=4, help="Limit Ollama CPU inference threads.")
+    parser.add_argument("--threads", type=int, default=8, help="Limit Ollama CPU inference threads.")
     parser.add_argument("--tiled", action="store_true", help="Use four overlapping tiles instead of one full-screen pass.")
     parser.add_argument("--min-detector-confidence", type=float, default=0.35)
     parser.add_argument("--min-score", type=float, default=0.65)
@@ -99,6 +99,14 @@ def main() -> int:
         screenshot = (ROOT / screenshot).resolve()
     if not screenshot.is_file():
         raise FileNotFoundError(screenshot)
+    if args.image is None:
+        age_seconds = datetime.now().timestamp() - screenshot.stat().st_mtime
+        if age_seconds > 300:
+            age_minutes = int(age_seconds // 60)
+            print(
+                f"WARNING: automatically selected screenshot is {age_minutes} minutes old. "
+                "Capture a fresh gameplay screenshot or pass --image explicitly."
+            )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
