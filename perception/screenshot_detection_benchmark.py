@@ -421,7 +421,7 @@ def main() -> None:
     parser.add_argument("--min-score", type=float, default=0.65)
     parser.add_argument("--min-margin", type=float, default=0.10)
     parser.add_argument("--timeout", type=float, default=180.0)
-    parser.add_argument("--threads", type=int, default=8, help="Ollama CPU inference threads")
+    parser.add_argument("--threads", type=int, default=None, help="Optional Ollama CPU inference thread override; default lets Ollama choose")
     parser.add_argument("--upscale", type=float, default=1.0, help="Optional image scale factor, capped by max-image-side")
     parser.add_argument("--overlap", type=float, default=0.12, help="Tile overlap fraction when --tiled is enabled")
     parser.add_argument("--min-detector-confidence", type=float, default=0.35)
@@ -431,8 +431,8 @@ def main() -> None:
     for option, value in (("--iou-threshold", args.iou_threshold), ("--min-score", args.min_score), ("--min-margin", args.min_margin)):
         if not 0 <= value <= 1 or (option == "--iou-threshold" and value == 0):
             parser.error(f"{option} is outside its valid range")
-    if args.timeout <= 0 or args.threads < 1 or args.upscale < 0.25:
-        parser.error("--timeout and --threads must be positive; --upscale must be at least 0.25")
+    if args.timeout <= 0 or (args.threads is not None and args.threads < 1) or args.upscale < 0.25:
+        parser.error("--timeout must be positive; --threads, when supplied, must be positive; --upscale must be at least 0.25")
     if not 0 <= args.overlap < 0.5:
         parser.error("--overlap must be between 0 and 0.5")
     if not 0 <= args.min_detector_confidence <= 1:
