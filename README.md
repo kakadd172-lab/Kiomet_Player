@@ -156,7 +156,7 @@ The entity detector asks the configured local vision model to propose tower/unit
 python -m perception.run_entity_detection
 ```
 
-Pass `--image path/to/screenshot.png` to select a screenshot, `--model qwen3-vl:4b-instruct` to select the Ollama model, `--tiled` to test higher-detail regional proposals, `--max-image-side 1280` to change the full-frame resize limit, or `--method grayscale` to change the icon-matching method. The default model is `qwen3-vl:4b-instruct`; it must already be available in Ollama. Green boxes indicate accepted icon identities and amber boxes indicate uncertain matches. This is an experimental proposal pipeline: the vision model can miss objects or propose false boxes, and deterministic matching cannot correct a badly placed crop. Validate detections against manually labelled full screenshots before relying on them.
+Pass `--image path/to/screenshot.png` to select a screenshot, `--model qwen3-vl:4b-instruct` to select the Ollama model, `--tiled` to test higher-detail regional proposals, `--max-image-side 1280` to change the full-frame resize limit, or `--method grayscale` to change the icon-matching method. CPU inference thread selection is left to Ollama by default; use `--threads N` only to explicitly override it. A `100% GPU` entry in `ollama ps` describes model placement/offload, not live GPU utilization. The default model is `qwen3-vl:4b-instruct`; it must already be available in Ollama. Green boxes indicate accepted icon identities and amber boxes indicate uncertain matches. This is an experimental proposal pipeline: the vision model can miss objects or propose false boxes, and deterministic matching cannot correct a badly placed crop. Validate detections against manually labelled full screenshots before relying on them.
 
 ### Track entities across successive screenshots
 
@@ -197,7 +197,7 @@ Use `perception.tracking_replay` to process a directory of screenshots in filena
 .\\.venv\\Scripts\\python.exe -m perception.tracking_replay --source path\\to\\screenshots --output benchmark_results\\replay.json --annotated-dir benchmark_results\\annotated
 ```
 
-Optional flags include `--model`, `--tiled`, `--native-resolution`, `--method`, and recognition thresholds. Filenames must represent chronological order. The runner does not download screenshots or infer ground-truth labels; copy the desired sequence from the ForTesting repository into a local folder first. Screenshots from different matches or sessions should be replayed separately so track IDs are not incorrectly carried across unrelated scenes.
+Optional flags include `--model`, `--tiled`, `--native-resolution`, `--method`, and recognition thresholds. Ollama selects CPU inference threads automatically by default; pass `--threads N` only when intentionally overriding that choice. Filenames must represent chronological order. The runner does not download screenshots or infer ground-truth labels; copy the desired sequence from the ForTesting repository into a local folder first. Screenshots from different matches or sessions should be replayed separately so track IDs are not incorrectly carried across unrelated scenes.
 
 ### Compare two tracking configurations on the same replay
 
