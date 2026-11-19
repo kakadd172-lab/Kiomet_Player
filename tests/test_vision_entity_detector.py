@@ -220,7 +220,7 @@ class VisionEntityDetectorTests(unittest.TestCase):
         with patch.object(detector, "_request_tile", side_effect=responses) as request:
             with self.assertRaisesRegex(
                 ValueError,
-                "truncated.*output-token limit.*cannot be subdivided further",
+                "truncated.*output-token limit.*produced no smaller child crops",
             ):
                 detector.propose_regions(large_image)
         self.assertEqual(request.call_count, 3)
