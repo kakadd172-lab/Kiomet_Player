@@ -52,6 +52,15 @@ class ImageMatcherTests(unittest.TestCase):
         self.assertIs(results[0].record, self.record)
         self.assertAlmostEqual(results[0].score, 1.0)
 
+    def test_shape_mode_preserves_saturated_cyan_icon_strokes(self):
+        candidate = np.zeros((24, 24, 3), dtype=np.uint8)
+        candidate[:] = (255, 80, 20)
+        cv2.circle(candidate, (12, 12), 8, (255, 255, 80), -1)
+
+        results = self.matcher.match(candidate, method="shape")
+        self.assertEqual(results[0].record, self.record)
+        self.assertGreater(results[0].score, 0.95)
+
     def test_shape_mode_ignores_saturated_blue_background(self):
         blue_background = np.zeros((24, 24, 3), dtype=np.uint8)
         blue_background[:] = (255, 110, 25)
