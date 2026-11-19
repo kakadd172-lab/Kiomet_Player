@@ -62,6 +62,40 @@ def _track_record(track: Any) -> dict[str, Any]:
     }
 
 
+def _detection_record(detection: Any) -> dict[str, Any]:
+    """Preserve raw proposal and recognition evidence alongside temporal tracks."""
+    proposal = detection.proposal
+    recognition = detection.recognition
+    return {
+        "region_id": proposal.region_id,
+        "tile": detection.tile_name,
+        "category": proposal.category,
+        "bbox": {
+            "x": proposal.x,
+            "y": proposal.y,
+            "width": proposal.width,
+            "height": proposal.height,
+        },
+        "detector_confidence": detection.detector_confidence,
+        "recognition": {
+            "accepted": recognition.accepted,
+            "status": recognition.status,
+            "icon_id": recognition.icon_id,
+            "display_name": recognition.display_name,
+            "top_score": recognition.top_score,
+            "margin": recognition.margin,
+            "candidates": [
+                {
+                    "icon_id": candidate.icon_id,
+                    "display_name": candidate.display_name,
+                    "score": candidate.score,
+                }
+                for candidate in recognition.candidates
+            ],
+        },
+    }
+
+
 def annotate_screenshot(source: Path, destination: Path, tracks: Iterable[Any], frame_index: int) -> None:
     """Write a copy of a screenshot with current track boxes and IDs."""
     with Image.open(source) as opened:
@@ -129,6 +163,11 @@ def run_replay(
             # manually reviewed "expected" list to evaluate this replay.
             "predicted": visible_records,
             "tracks": visible_records,
+            # Keep detector and recognizer evidence separate from track confidence.
+            "detections": [
+                _detection_record(item)
+                for item in getattr(active_pipeline, "last_detections", ())
+            ],
             "temporarily_missing_tracks": [
                 _track_record(track) for track in all_tracks if track.missed_frames > 0
             ],
