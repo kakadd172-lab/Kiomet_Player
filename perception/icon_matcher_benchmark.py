@@ -143,6 +143,9 @@ def run_benchmark(
         if debug_shapes_dir is not None and method == "shape":
             filtered = matcher._candidate_shape(image_path, filter_saturation=True)
             luminance = matcher._candidate_shape(image_path, filter_saturation=False)
+            high_brightness = matcher._candidate_shape(
+                image_path, filter_saturation=False, contrast_fraction=0.72
+            )
             expected_template = next(
                 item.shape for item in matcher._templates
                 if item.record.id == expected.id
@@ -151,17 +154,25 @@ def run_benchmark(
                 item.shape for item in matcher._templates
                 if all_ranked and item.record.id == all_ranked[0].record.id
             ) if all_ranked else np.zeros_like(filtered)
-            # A labelled 2x2 diagnostic makes extraction errors visible:
-            # filtered candidate, luminance candidate, expected template,
-            # and the current top-ranked template.
+            candidates = (filtered, luminance, high_brightness)
+            best_expected_candidate = max(
+                candidates,
+                key=lambda mask: matcher._shape_similarity(mask, expected_template),
+            )
+            # 3x2 diagnostic, in row-major order:
+            # filtered / luminance / high-brightness candidates;
+            # expected template / top-ranked template / best candidate for expected.
             tile_size = (192, 192)
             tiles = [
                 cv2.resize(mask, tile_size, interpolation=cv2.INTER_NEAREST)
-                for mask in (filtered, luminance, expected_template, top_template)
+                for mask in (
+                    filtered, luminance, high_brightness,
+                    expected_template, top_template, best_expected_candidate,
+                )
             ]
             montage = np.vstack((
-                np.hstack((tiles[0], tiles[1])),
-                np.hstack((tiles[2], tiles[3])),
+                np.hstack((tiles[0], tiles[1], tiles[2])),
+                np.hstack((tiles[3], tiles[4], tiles[5])),
             ))
             debug_shapes_dir.mkdir(parents=True, exist_ok=True)
             debug_path = debug_shapes_dir / f"{name}_shape_debug.png"
