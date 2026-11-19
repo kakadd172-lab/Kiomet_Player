@@ -7,6 +7,7 @@ predictions cannot safely be counted as false positives.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -310,9 +311,12 @@ def run_benchmark(
             if match["identity_scored"]:
                 identity_scored += 1
                 identity_correct += int(bool(match["identity_correct"]))
+        image_bytes = image_path.read_bytes()
         per_image.append({
             "name": case["name"],
             "image": case["image"],
+            "source_file_bytes": len(image_bytes),
+            "source_file_sha256": hashlib.sha256(image_bytes).hexdigest(),
             "expected_count": len(expected),
             "predicted_count": len(predictions),
             "metrics": _rates(tp, fp, fn),
