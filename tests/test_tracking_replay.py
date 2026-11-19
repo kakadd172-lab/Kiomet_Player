@@ -71,6 +71,10 @@ class TrackingReplayTests(unittest.TestCase):
 
             self.assertEqual(pipeline.calls, ["01.png", "02.png"])
             self.assertEqual(report["frames_processed"], 2)
+            self.assertGreaterEqual(report["runtime"]["total_seconds"], 0)
+            self.assertGreaterEqual(report["runtime"]["frames_per_second"], 0)
+            self.assertGreaterEqual(report["frames"][0]["processing_seconds"], 0)
+            self.assertEqual(report["detector"]["max_image_side"], 960)
             self.assertEqual(report["frames"][0]["tracks"][0]["track_id"], "entity-000001")
             self.assertEqual(report["frames"][0]["predicted"][0]["track_id"], "entity-000001")
             self.assertEqual(len(report["frames"][0]["source_sha256"]), 64)
