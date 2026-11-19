@@ -257,6 +257,10 @@ def run_benchmark(
     min_score: float = 0.65,
     min_margin: float = 0.10,
     timeout: float = 180.0,
+    num_threads: int = 8,
+    upscale: float = 1.0,
+    overlap: float = 0.12,
+    min_detector_confidence: float = 0.35,
 ) -> dict[str, Any]:
     document, cases = load_labels(labels_path)
     detector = VisionEntityDetector(
@@ -264,6 +268,10 @@ def run_benchmark(
         max_image_side=max_image_side,
         tiled=tiled,
         timeout=timeout,
+        num_threads=num_threads,
+        upscale=upscale,
+        overlap=overlap,
+        min_detector_confidence=min_detector_confidence,
     )
     per_image = []
     total_tp = total_fp = total_fn = 0
@@ -340,6 +348,11 @@ def run_benchmark(
             "iou_threshold": iou_threshold,
             "min_score": min_score,
             "min_margin": min_margin,
+            "timeout_seconds": timeout,
+            "num_threads": num_threads,
+            "upscale": upscale,
+            "tile_overlap": overlap,
+            "min_detector_confidence": min_detector_confidence,
         },
         "summary": {
             "screenshots_evaluated": len(per_image),
@@ -408,17 +421,29 @@ def main() -> None:
     parser.add_argument("--min-score", type=float, default=0.65)
     parser.add_argument("--min-margin", type=float, default=0.10)
     parser.add_argument("--timeout", type=float, default=180.0)
+    parser.add_argument("--threads", type=int, default=8, help="Ollama CPU inference threads")
+    parser.add_argument("--upscale", type=float, default=1.0, help="Optional image scale factor, capped by max-image-side")
+    parser.add_argument("--overlap", type=float, default=0.12, help="Tile overlap fraction when --tiled is enabled")
+    parser.add_argument("--min-detector-confidence", type=float, default=0.35)
     args = parser.parse_args()
     if args.max_image_side is not None and args.max_image_side < 256:
         parser.error("--max-image-side must be 'native' or at least 256")
     for option, value in (("--iou-threshold", args.iou_threshold), ("--min-score", args.min_score), ("--min-margin", args.min_margin)):
         if not 0 <= value <= 1 or (option == "--iou-threshold" and value == 0):
             parser.error(f"{option} is outside its valid range")
+    if args.timeout <= 0 or args.threads < 1 or args.upscale < 0.25:
+        parser.error("--timeout and --threads must be positive; --upscale must be at least 0.25")
+    if not 0 <= args.overlap < 0.5:
+        parser.error("--overlap must be between 0 and 0.5")
+    if not 0 <= args.min_detector_confidence <= 1:
+        parser.error("--min-detector-confidence must be between 0 and 1")
     run_benchmark(
         args.labels, args.output, model=args.model, method=args.method,
         max_image_side=args.max_image_side, tiled=args.tiled,
         iou_threshold=args.iou_threshold, min_score=args.min_score,
         min_margin=args.min_margin, timeout=args.timeout,
+        num_threads=args.threads, upscale=args.upscale, overlap=args.overlap,
+        min_detector_confidence=args.min_detector_confidence,
     )
 
 
