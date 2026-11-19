@@ -19,14 +19,18 @@ class EntityTrackerTests(unittest.TestCase):
     def test_different_categories_never_match(self):
         tracker = EntityTracker()
         first = tracker.update([self.observation(category="tower")])[0]
-        second = tracker.update([self.observation(category="unit")])[0]
-        self.assertNotEqual(first.track_id, second.track_id)
+        tracker.update([self.observation(category="unit")])
+        current = tracker.snapshot(include_missing=False)
+        self.assertEqual(len(current), 1)
+        self.assertNotEqual(first.track_id, current[0].track_id)
 
     def test_conflicting_known_identity_never_matches(self):
         tracker = EntityTracker()
         first = tracker.update([self.observation(identity="Radar")])[0]
-        second = tracker.update([self.observation(identity="Factory")])[0]
-        self.assertNotEqual(first.track_id, second.track_id)
+        tracker.update([self.observation(identity="Factory")])
+        current = tracker.snapshot(include_missing=False)
+        self.assertEqual(len(current), 1)
+        self.assertNotEqual(first.track_id, current[0].track_id)
 
     def test_one_missing_frame_is_retained_then_reacquired(self):
         tracker = EntityTracker(max_missed_frames=2)
