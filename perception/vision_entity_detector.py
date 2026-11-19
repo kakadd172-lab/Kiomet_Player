@@ -116,7 +116,9 @@ class VisionEntityDetector:
         ollama_url: str = DEFAULT_OLLAMA_URL,
         timeout: float = 180.0,
         overlap: float = 0.12,
-        upscale: float = 1.5,
+        upscale: float = 1.0,
+        max_image_side: int = 960,
+        tiled: bool = False,
         min_detector_confidence: float = 0.35,
         duplicate_iou: float = 0.45,
         screen_recognizer: ScreenEntityRecognizer | None = None,
@@ -127,8 +129,12 @@ class VisionEntityDetector:
             raise ValueError("ollama_url must be a non-empty string")
         if timeout <= 0:
             raise ValueError("timeout must be positive")
-        if not isinstance(upscale, (int, float)) or isinstance(upscale, bool) or upscale < 1:
-            raise ValueError("upscale must be at least 1")
+        if not isinstance(upscale, (int, float)) or isinstance(upscale, bool) or upscale < 0.25:
+            raise ValueError("upscale must be at least 0.25")
+        if not isinstance(max_image_side, int) or isinstance(max_image_side, bool) or max_image_side < 256:
+            raise ValueError("max_image_side must be an integer of at least 256")
+        if not isinstance(tiled, bool):
+            raise ValueError("tiled must be a boolean")
         if not 0 <= min_detector_confidence <= 1:
             raise ValueError("min_detector_confidence must be between 0 and 1")
         if not 0 < duplicate_iou <= 1:
@@ -138,6 +144,8 @@ class VisionEntityDetector:
         self.timeout = timeout
         self.overlap = overlap
         self.upscale = float(upscale)
+        self.max_image_side = max_image_side
+        self.tiled = tiled
         self.min_detector_confidence = float(min_detector_confidence)
         self.duplicate_iou = float(duplicate_iou)
         self.screen_recognizer = screen_recognizer or ScreenEntityRecognizer()
@@ -166,9 +174,10 @@ class VisionEntityDetector:
         )
 
     def _request_tile(self, tile: Image.Image) -> dict[str, Any]:
-        if self.upscale != 1:
+        scale = min(self.upscale, self.max_image_side / max(tile.width, tile.height))
+        if scale != 1:
             tile = tile.resize(
-                (max(1, round(tile.width * self.upscale)), max(1, round(tile.height * self.upscale))),
+                (max(1, round(tile.width * scale)), max(1, round(tile.height * scale))),
                 Image.Resampling.LANCZOS,
             )
         buffer = BytesIO()
@@ -183,10 +192,37 @@ class VisionEntityDetector:
                     "content": self._prompt(tile.width, tile.height),
                     "images": [encoded],
                 }],
-                "format": "json",
+                "format": {
+                    "type": "object",
+                    "properties": {
+                        "entities": {
+                            "type": "array",
+                            "maxItems": 16,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "category": {"type": "string", "enum": ["tower", "unit", "unknown"]},
+                                    "bbox": {
+                                        "type": "object",
+                                        "properties": {
+                                            "x": {"type": "number"},
+                                            "y": {"type": "number"},
+                                            "width": {"type": "number"},
+                                            "height": {"type": "number"},
+                                        },
+                                        "required": ["x", "y", "width", "height"],
+                                    },
+                                    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                                },
+                                "required": ["category", "bbox", "confidence"],
+                            },
+                        }
+                    },
+                    "required": ["entities"],
+                },
                 "stream": False,
                 "keep_alive": "5m",
-                "options": {"temperature": 0.1},
+                "options": {"temperature": 0.1, "num_predict": 700},
             },
             timeout=self.timeout,
         )
@@ -205,7 +241,12 @@ class VisionEntityDetector:
         width, height = image.size
         proposals: list[VisionProposal] = []
 
-        for tile_name, left, top, right, bottom in _tile_bounds(width, height, self.overlap):
+        tiles = (
+            [("full", 0, 0, width, height)]
+            if not self.tiled
+            else _tile_bounds(width, height, self.overlap)
+        )
+        for tile_name, left, top, right, bottom in tiles:
             tile = image.crop((left, top, right, bottom))
             result = self._request_tile(tile)
             tile_width = right - left
