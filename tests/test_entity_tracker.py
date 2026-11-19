@@ -74,7 +74,7 @@ class EntityTrackerTests(unittest.TestCase):
         tracker = EntityTracker(min_iou=0.1, max_center_distance=0.0)
         first = tracker.update([
             EntityObservation("tower", (0.30, 0.1, 0.2, 0.1)),
-            EntityObservation("tower", (0.375, 0.1, 0.1, 0.1)),
+            EntityObservation("tower", (0.525, 0.1, 0.1, 0.1)),
         ])
         nearer_track_id = first[1].track_id
         tracker.update([EntityObservation("tower", (0.40, 0.1, 0.2, 0.1))])
