@@ -36,6 +36,23 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertEqual(detector.upscale, 1.0)
         self.assertEqual(detector.num_threads, 4)
 
+    def test_default_detector_requests_one_full_frame(self):
+        detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
+        with patch.object(detector, "_request_tile", return_value={"entities": []}) as request:
+            self.assertEqual(detector.propose_regions(self.image), [])
+        request.assert_called_once()
+        self.assertEqual(request.call_args.args[0].size, (100, 100))
+
+    def test_malformed_model_json_skips_tile_instead_of_crashing(self):
+        detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
+        with patch.object(
+            detector,
+            "_request_tile",
+            side_effect=ValueError("Vision model returned malformed JSON (bad token at line 1, column 2)"),
+        ):
+            with self.assertWarns(RuntimeWarning):
+                self.assertEqual(detector.propose_regions(self.image), [])
+
     def test_tiles_cover_full_image_with_overlap(self):
         tiles = _tile_bounds(100, 100, 0.12)
         self.assertEqual(len(tiles), 4)
