@@ -51,19 +51,20 @@ class EntityTrackerTests(unittest.TestCase):
         self.assertEqual(tracker.snapshot(include_missing=False), ())
 
     def test_maximum_cardinality_matching_avoids_greedy_stranding(self):
-        tracker = EntityTracker(min_iou=0.0, max_center_distance=0.0)
-        # A can match either old track, B can match only the first.
+        tracker = EntityTracker(min_iou=0.01, max_center_distance=0.0)
+        # New observation A overlaps both old tracks; B overlaps only track 1.
         tracker.update([
-            EntityObservation("tower", (0.10, 0.1, 0.2, 0.2), "A"),
-            EntityObservation("tower", (0.04, 0.1, 0.2, 0.2), "B"),
+            EntityObservation("tower", (0.05, 0.1, 0.2, 0.2)),
+            EntityObservation("tower", (0.20, 0.1, 0.2, 0.2)),
         ])
         result = tracker.update([
-            EntityObservation("tower", (0.09, 0.1, 0.2, 0.2), "A"),
-            EntityObservation("tower", (0.04, 0.1, 0.2, 0.2), "B"),
+            EntityObservation("tower", (0.12, 0.1, 0.2, 0.2)),
+            EntityObservation("tower", (0.00, 0.1, 0.1, 0.2)),
         ])
         self.assertEqual(len({item.track_id for item in result}), 2)
-        self.assertEqual({item.identity: item.track_id for item in result}["A"], "entity-000001")
-        self.assertEqual({item.identity: item.track_id for item in result}["B"], "entity-000002")
+        self.assertEqual({item.track_id for item in result}, {"entity-000001", "entity-000002"})
+        # Both observations were assigned to existing tracks, not new IDs.
+        self.assertTrue(all(item.first_seen_frame == 1 for item in result))
 
     def test_invalid_observation_does_not_advance_frame(self):
         tracker = EntityTracker()
