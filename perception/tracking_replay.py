@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from time import perf_counter
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -102,7 +103,9 @@ def run_replay(
     active_pipeline = pipeline or TrackedEntityPipeline()
     active_pipeline.reset()
     frames = []
+    replay_started = perf_counter()
     for frame_index, screenshot in enumerate(screenshots, start=1):
+        frame_started = perf_counter()
         current = active_pipeline.process(
             screenshot,
             method=method,
@@ -112,11 +115,13 @@ def run_replay(
         all_tracks = active_pipeline.snapshot(include_missing=True)
         visible_tracks = [track for track in current if track.missed_frames == 0]
         visible_records = [_track_record(track) for track in visible_tracks]
+        frame_duration_seconds = perf_counter() - frame_started
         frames.append({
             "frame_index": frame_index,
             "source": screenshot.name,
             "source_path": str(screenshot),
             "source_sha256": _sha256(screenshot),
+            "processing_seconds": round(frame_duration_seconds, 6),
             # "predicted" matches the tracking benchmark input schema; add a
             # manually reviewed "expected" list to evaluate this replay.
             "predicted": visible_records,
@@ -133,11 +138,17 @@ def run_replay(
                 frame_index,
             )
 
+    total_duration_seconds = perf_counter() - replay_started
     report = {
         "benchmark": "kiomet_temporal_tracking_replay",
         "schema_version": 1,
         "source": str(source),
         "frames_processed": len(frames),
+        "runtime": {
+            "total_seconds": round(total_duration_seconds, 6),
+            "mean_frame_seconds": round(total_duration_seconds / len(frames), 6),
+            "frames_per_second": round(len(frames) / total_duration_seconds, 4) if total_duration_seconds > 0 else None,
+        },
         "detector": {
             "model": active_pipeline.detector.model,
             "method": method,
