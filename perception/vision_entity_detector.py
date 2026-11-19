@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import json
+import warnings
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -258,7 +259,17 @@ class VisionEntityDetector:
         )
         for tile_name, left, top, right, bottom in tiles:
             tile = image.crop((left, top, right, bottom))
-            result = self._request_tile(tile)
+            try:
+                result = self._request_tile(tile)
+            except ValueError as error:
+                if "malformed JSON" not in str(error):
+                    raise
+                warnings.warn(
+                    f"Skipping {tile_name}: {error}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                continue
             tile_width = right - left
             tile_height = bottom - top
 
