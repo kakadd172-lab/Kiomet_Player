@@ -11,7 +11,16 @@ from perception.tracking_replay import discover_screenshots, run_replay
 
 class FakePipeline:
     def __init__(self):
-        self.detector = SimpleNamespace(model="fake-model")
+        self.detector = SimpleNamespace(
+            model="fake-model",
+            tiled=False,
+            max_image_side=960,
+            upscale=1.0,
+            overlap=0.2,
+            num_threads=None,
+            min_detector_confidence=0.35,
+            timeout=180.0,
+        )
         self.calls = []
         self.track = SimpleNamespace(
             track_id="entity-000001",
