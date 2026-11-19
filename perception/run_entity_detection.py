@@ -87,7 +87,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--max-image-side", type=int, default=960, help="Resize the model input so its longest side is at most this many pixels.")
     parser.add_argument("--threads", type=int, default=8, help="Limit Ollama CPU inference threads.")
-    parser.add_argument("--tiled", action="store_true", help="Use four overlapping tiles instead of one full-screen pass.")
+    parser.add_argument("--tiled", action="store_true", help="Use up to four overlapping image tiles instead of one full-screen pass.")
     parser.add_argument("--min-detector-confidence", type=float, default=0.35)
     parser.add_argument("--min-score", type=float, default=0.65)
     parser.add_argument("--min-margin", type=float, default=0.10)
@@ -124,7 +124,9 @@ def main() -> int:
 
     print(f"Screenshot: {screenshot}")
     print(f"Model: {args.model}")
-    print(f"Input image: {Image.open(screenshot).size[0]}x{Image.open(screenshot).size[1]}")
+    with Image.open(screenshot) as source_image:
+        input_width, input_height = source_image.size
+    print(f"Input image: {input_width}x{input_height}")
     print("Proposing regions in " + ("four overlapping tiles..." if args.tiled else "one resized full-screen image..."))
     results = detector.detect(
         screenshot,
