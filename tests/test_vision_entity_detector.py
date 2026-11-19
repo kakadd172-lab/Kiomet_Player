@@ -6,6 +6,7 @@ import numpy as np
 from perception.vision_entity_detector import (
     VisionEntityDetector,
     _tile_bounds,
+    _timing_summary,
 )
 
 
