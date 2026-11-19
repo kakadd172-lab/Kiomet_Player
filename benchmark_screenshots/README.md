@@ -67,17 +67,23 @@ From the repository root, with the project virtual environment active:
 .\.venv\Scripts\python.exe -m perception.screenshot_detection_benchmark --labels benchmark_screenshots/labels.json --max-image-side 960
 ```
 
-Compare input resolutions without changing recognition thresholds:
+The input-size control is flexible: choose any integer maximum side of
+256 pixels or more, rather than a fixed preset. Use `native` to disable
+downscaling and send each full frame at its source resolution (subject to the
+model/server's own limits). For example:
 
 ```powershell
-.\.venv\Scripts\python.exe -m perception.screenshot_detection_benchmark --max-image-side 960 --output benchmark_results/detection_960.json
-.\.venv\Scripts\python.exe -m perception.screenshot_detection_benchmark --max-image-side 1280 --output benchmark_results/detection_1280.json
+.\\.venv\\Scripts\\python.exe -m perception.screenshot_detection_benchmark --max-image-side 720 --output benchmark_results/detection_720.json
+.\\.venv\\Scripts\\python.exe -m perception.screenshot_detection_benchmark --max-image-side 1440 --output benchmark_results/detection_1440.json
+.\\.venv\\Scripts\\python.exe -m perception.screenshot_detection_benchmark --max-image-side native --output benchmark_results/detection_native.json
 ```
 
-Use `--tiled` for the higher-detail tiled path. Keep model, screenshot set,
-IoU threshold, and confidence thresholds identical when comparing resolution
-or tiling. Reports include precision, recall, F1, matched bounding-box IoU,
-identity accuracy for labelled identities, and the detector's timing metadata.
+Use `--tiled` to split the screenshot into overlapping regions before
+inference. Full-frame and tiled modes can each use any maximum side or native
+resolution. Keep model, screenshot set, IoU threshold, and confidence
+thresholds identical when comparing runs. Reports include precision, recall,
+F1, matched bounding-box IoU, identity accuracy for labelled identities, and
+the detector's timing metadata.
 
 The benchmark does not change production defaults or tune thresholds. First
 collect enough varied, exhaustively labelled screenshots to make comparisons
