@@ -10,7 +10,7 @@ from __future__ import annotations
 import base64
 import json
 from dataclasses import dataclass
-from time import perf_counter
+from time import perf_counter, sleep
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -236,53 +236,75 @@ class VisionEntityDetector:
         encoded = base64.b64encode(png_bytes).decode("ascii")
         preprocessing_ms = (perf_counter() - preprocessing_started) * 1000.0
         request_started = perf_counter()
-        response = requests.post(
-            self.ollama_url,
-            json={
-                "model": self.model,
-                "messages": [{
-                    "role": "user",
-                    "content": self._prompt(tile.width, tile.height),
-                    "images": [encoded],
-                }],
-                "format": {
-                    "type": "object",
-                    "properties": {
-                        "entities": {
-                            "type": "array",
-                            "maxItems": 64,
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "category": {"type": "string", "enum": ["tower", "unit", "unknown"]},
-                                    "bbox": {
-                                        "type": "object",
-                                        "properties": {
-                                            "x": {"type": "number"},
-                                            "y": {"type": "number"},
-                                            "width": {"type": "number"},
-                                            "height": {"type": "number"},
-                                        },
-                                        "required": ["x", "y", "width", "height"],
+        request_payload = {
+            "model": self.model,
+            "messages": [{
+                "role": "user",
+                "content": self._prompt(tile.width, tile.height),
+                "images": [encoded],
+            }],
+            "format": {
+                "type": "object",
+                "properties": {
+                    "entities": {
+                        "type": "array",
+                        "maxItems": 64,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "category": {"type": "string", "enum": ["tower", "unit", "unknown"]},
+                                "bbox": {
+                                    "type": "object",
+                                    "properties": {
+                                        "x": {"type": "number"},
+                                        "y": {"type": "number"},
+                                        "width": {"type": "number"},
+                                        "height": {"type": "number"},
                                     },
-                                    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                                    "required": ["x", "y", "width", "height"],
+                                    "additionalProperties": False,
                                 },
-                                "required": ["category", "bbox", "confidence"],
+                                "confidence": {"type": "number", "minimum": 0, "maximum": 1},
                             },
-                        }
-                    },
-                    "required": ["entities"],
+                            "required": ["category", "bbox", "confidence"],
+                            "additionalProperties": False,
+                        },
+                    }
                 },
-                "stream": False,
-                "keep_alive": "5m",
-                "options": {
-                    "temperature": 0.1,
-                    "num_predict": DEFAULT_MAX_OUTPUT_TOKENS,
-                    **({"num_thread": self.num_threads} if self.num_threads is not None else {}),
-                },
+                "required": ["entities"],
+                "additionalProperties": False,
             },
-            timeout=self.timeout,
-        )
+            "stream": False,
+            "keep_alive": "5m",
+            "options": {
+                "temperature": 0.1,
+                "num_predict": DEFAULT_MAX_OUTPUT_TOKENS,
+                **({"num_thread": self.num_threads} if self.num_threads is not None else {}),
+            },
+        }
+        # Ollama can close a local HTTP connection while loading or recovering
+        # the model. Retry one connection-level failure; do not retry timeouts
+        # or HTTP errors, which could duplicate expensive in-flight inference.
+        response = None
+        connection_error: requests.exceptions.ConnectionError | None = None
+        for attempt in range(2):
+            try:
+                response = requests.post(
+                    self.ollama_url,
+                    json=request_payload,
+                    timeout=self.timeout,
+                )
+                break
+            except requests.exceptions.ConnectionError as error:
+                connection_error = error
+                if attempt == 0:
+                    sleep(1.0)
+        if response is None:
+            raise RuntimeError(
+                "Could not connect to Ollama after 2 attempts while processing "
+                f"a {source_width}x{source_height} image tile with model "
+                f"{self.model!r} at {self.ollama_url}. The frame was not accepted."
+            ) from connection_error
         response.raise_for_status()
         payload = response.json()
         content = payload.get("message", {}).get("content")
@@ -363,6 +385,7 @@ class VisionEntityDetector:
             nonlocal adaptive_split_count
             try:
                 result = self._request_tile(tile)
+                self.inference_metrics[-1]["tile_name"] = tile_name
             except ValueError as error:
                 is_truncated = "truncated at Ollama's output-token limit" in str(error)
                 can_split = (
@@ -372,6 +395,12 @@ class VisionEntityDetector:
                     and tile.height >= 128
                 )
                 if not can_split:
+                    if is_truncated:
+                        raise ValueError(
+                            f"{error} Tile {tile_name!r} ({tile.width}x{tile.height}) "
+                            f"cannot be subdivided further (adaptive depth {depth}/"
+                            f"{max_adaptive_split_depth})."
+                        ) from error
                     raise
 
                 # Discard the incomplete parent response and retry its image as
@@ -379,7 +408,9 @@ class VisionEntityDetector:
                 # the frame still fails rather than returning partial detections.
                 child_bounds = _tile_bounds(tile.width, tile.height, self.overlap)
                 if len(child_bounds) <= 1:
-                    raise
+                    raise ValueError(
+                        f"{error} Tile {tile_name!r} produced no smaller child crops."
+                    ) from error
                 adaptive_split_count += 1
                 for child_name, left, top, right, bottom in child_bounds:
                     child = tile.crop((left, top, right, bottom))
