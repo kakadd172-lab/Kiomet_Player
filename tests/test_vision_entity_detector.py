@@ -110,6 +110,25 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertIn("including the King and special entities", prompt)
         self.assertIn("Do not merge nearby separate symbols", prompt)
 
+    def test_pipeline_metrics_record_model_and_detector_configuration(self):
+        detector = VisionEntityDetector(
+            model="qwen2.5vl:3b",
+            max_image_side=1440,
+            tiled=True,
+            overlap=0.2,
+            num_threads=6,
+            screen_recognizer=self.screen_recognizer,
+        )
+        with patch.object(detector, "_request_tile", return_value={"entities": []}):
+            detector.propose_regions(self.image)
+        metrics = detector.pipeline_metrics
+        self.assertEqual(metrics["model"], "qwen2.5vl:3b")
+        self.assertEqual(metrics["configuration"]["max_image_side"], 1440)
+        self.assertTrue(metrics["configuration"]["tiled"])
+        self.assertEqual(metrics["configuration"]["overlap"], 0.2)
+        self.assertEqual(metrics["configuration"]["num_threads"], 6)
+        self.assertEqual(metrics["tile_count"], 4)
+
     def test_native_mode_does_not_resize_source_image(self):
         from PIL import Image
         detector = VisionEntityDetector(
