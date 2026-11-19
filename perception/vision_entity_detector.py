@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import base64
 import json
-import warnings
 from dataclasses import dataclass
 from time import perf_counter
 from io import BytesIO
@@ -29,6 +28,7 @@ from .entity_recognizer import (
 
 DEFAULT_OLLAMA_URL = "http://localhost:11434/api/chat"
 DEFAULT_MODEL = "qwen3-vl:4b-instruct"
+DEFAULT_MAX_OUTPUT_TOKENS = 4096
 MIN_SPLIT_DIMENSION = 64
 
 
@@ -273,13 +273,26 @@ class VisionEntityDetector:
                 },
                 "stream": False,
                 "keep_alive": "5m",
-                "options": {"temperature": 0.1, "num_predict": 1800, "num_thread": self.num_threads},
+                "options": {
+                    "temperature": 0.1,
+                    "num_predict": DEFAULT_MAX_OUTPUT_TOKENS,
+                    "num_thread": self.num_threads,
+                },
             },
             timeout=self.timeout,
         )
         response.raise_for_status()
         payload = response.json()
         content = payload.get("message", {}).get("content")
+        done_reason = payload.get("done_reason")
+        if done_reason == "length":
+            generated = payload.get("eval_count")
+            raise ValueError(
+                "Vision model response was truncated at Ollama's output-token limit "
+                f"({generated if isinstance(generated, int) else 'unknown'} tokens; "
+                f"configured limit={DEFAULT_MAX_OUTPUT_TOKENS}). "
+                "No partial detections were accepted."
+            )
         if not isinstance(content, str) or not content.strip():
             raise ValueError("Vision model returned an empty response")
         try:
@@ -288,7 +301,6 @@ class VisionEntityDetector:
             lines = content.splitlines()
             nearby = lines[error.lineno - 1] if 0 < error.lineno <= len(lines) else content[:180]
             nearby = nearby.strip()[:180]
-            done_reason = payload.get("done_reason", "not reported")
             raise ValueError(
                 f"Vision model returned malformed JSON ({error.msg} at line {error.lineno}, "
                 f"column {error.colno}; done_reason={done_reason}; nearby={nearby!r})"
@@ -338,17 +350,9 @@ class VisionEntityDetector:
         )
         for tile_name, left, top, right, bottom in tiles:
             tile = image.crop((left, top, right, bottom))
-            try:
-                result = self._request_tile(tile)
-            except ValueError as error:
-                if "malformed JSON" not in str(error):
-                    raise
-                warnings.warn(
-                    f"Skipping {tile_name}: {error}",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
-                continue
+            # A failed or truncated tile must fail the frame. Silently
+            # skipping it would make an incomplete detector result look valid.
+            result = self._request_tile(tile)
             tile_width = right - left
             tile_height = bottom - top
 
