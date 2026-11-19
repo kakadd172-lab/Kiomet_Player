@@ -316,6 +316,7 @@ def run_benchmark(
             "expected_count": len(expected),
             "predicted_count": len(predictions),
             "metrics": _rates(tp, fp, fn),
+            "by_category": _category_metrics(expected, predictions, iou_threshold),
             **matching,
             "predictions": predictions,
             "pipeline_metrics": detector.pipeline_metrics,
