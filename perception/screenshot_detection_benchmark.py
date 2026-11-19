@@ -251,7 +251,7 @@ def run_benchmark(
     *,
     model: str = "qwen2.5vl:3b",
     method: str = "shape",
-    max_image_side: int = 960,
+    max_image_side: int | None = 960,
     tiled: bool = False,
     iou_threshold: float = 0.5,
     min_score: float = 0.65,
@@ -378,21 +378,39 @@ def run_benchmark(
     return report
 
 
+def _parse_max_image_side(value: str) -> int | None:
+    if value.casefold() in {"native", "none", "off"}:
+        return None
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be an integer >=256 or 'native'") from error
+    if parsed < 256:
+        raise argparse.ArgumentTypeError("must be at least 256 or 'native'")
+    return parsed
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--labels", type=Path, default=DEFAULT_LABELS)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--model", default="qwen2.5vl:3b")
     parser.add_argument("--method", choices=("shape", "grayscale"), default="shape")
-    parser.add_argument("--max-image-side", type=int, default=960)
+    parser.add_argument(
+        "--max-image-side",
+        type=_parse_max_image_side,
+        default=960,
+        metavar="PIXELS|native",
+        help="maximum input side in pixels (any integer >=256), or 'native' to preserve source resolution",
+    )
     parser.add_argument("--tiled", action="store_true")
     parser.add_argument("--iou-threshold", type=float, default=0.5)
     parser.add_argument("--min-score", type=float, default=0.65)
     parser.add_argument("--min-margin", type=float, default=0.10)
     parser.add_argument("--timeout", type=float, default=180.0)
     args = parser.parse_args()
-    if args.max_image_side < 256:
-        parser.error("--max-image-side must be at least 256")
+    if args.max_image_side is not None and args.max_image_side < 256:
+        parser.error("--max-image-side must be 'native' or at least 256")
     for option, value in (("--iou-threshold", args.iou_threshold), ("--min-score", args.min_score), ("--min-margin", args.min_margin)):
         if not 0 <= value <= 1 or (option == "--iou-threshold" and value == 0):
             parser.error(f"{option} is outside its valid range")
