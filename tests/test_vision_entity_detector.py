@@ -109,6 +109,22 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertIn("including the King and special entities", prompt)
         self.assertIn("Do not merge nearby separate symbols", prompt)
 
+    def test_native_mode_does_not_resize_source_image(self):
+        from PIL import Image
+        detector = VisionEntityDetector(
+            screen_recognizer=self.screen_recognizer,
+            max_image_side=None,
+        )
+        response = unittest.mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "message": {"content": '{"entities": []}'},
+            "total_duration": 1_000_000,
+        }
+        with patch("PIL.Image.Image.resize", side_effect=AssertionError("native mode resized image")):
+            with patch("perception.vision_entity_detector.requests.post", return_value=response):
+                self.assertEqual(detector._request_tile(Image.new("RGB", (320, 200))), {"entities": []})
+
     def test_request_records_ollama_timing_metrics(self):
         from PIL import Image
         detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
