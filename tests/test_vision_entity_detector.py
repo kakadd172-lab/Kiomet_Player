@@ -1,4 +1,6 @@
 import unittest
+
+import requests
 from unittest.mock import patch
 
 import numpy as np
@@ -103,7 +105,7 @@ class VisionEntityDetectorTests(unittest.TestCase):
         with (
             patch(
                 "perception.vision_entity_detector.requests.post",
-                side_effect=[__import__("requests").exceptions.ConnectionError("remote closed"), response],
+                side_effect=[requests.exceptions.ConnectionError("remote closed"), response],
             ) as request,
             patch("perception.vision_entity_detector.sleep") as wait,
         ):
@@ -174,6 +176,35 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertAlmostEqual(proposals[0].proposal.width, 0.112)
         self.assertAlmostEqual(proposals[0].proposal.height, 0.2)
         self.assertEqual(detector.pipeline_metrics["adaptive_split_count"], 1)
+
+    def test_adaptive_retry_recurses_when_a_child_also_truncates(self):
+        detector = VisionEntityDetector(
+            screen_recognizer=self.screen_recognizer,
+            tiled=False,
+        )
+        entity = {
+            "category": "unit",
+            "bbox": {"x": 0.25, "y": 0.25, "width": 0.2, "height": 0.2},
+            "confidence": 0.9,
+        }
+        responses = [
+            ValueError("Vision model response was truncated at Ollama's output-token limit"),
+            ValueError("Vision model response was truncated at Ollama's output-token limit"),
+            {"entities": [entity]},
+            {"entities": []},
+            {"entities": []},
+        ]
+        large_image = np.zeros((200, 200, 3), dtype=np.uint8)
+        with patch.object(detector, "_request_tile", side_effect=responses) as request:
+            proposals = detector.propose_regions(large_image)
+
+        self.assertEqual(request.call_count, 5)
+        self.assertEqual(len(proposals), 1)
+        self.assertAlmostEqual(proposals[0].proposal.x, 0.14)
+        self.assertAlmostEqual(proposals[0].proposal.y, 0.14)
+        self.assertAlmostEqual(proposals[0].proposal.width, 0.112)
+        self.assertAlmostEqual(proposals[0].proposal.height, 0.112)
+        self.assertEqual(detector.pipeline_metrics["adaptive_split_count"], 2)
 
     def test_adaptive_retry_still_fails_if_a_child_tile_truncates(self):
         detector = VisionEntityDetector(
