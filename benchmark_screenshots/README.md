@@ -82,3 +82,20 @@ identity accuracy for labelled identities, and the detector's timing metadata.
 The benchmark does not change production defaults or tune thresholds. First
 collect enough varied, exhaustively labelled screenshots to make comparisons
 meaningful.
+
+
+## Existing screenshot sources
+
+A first-pass visual review of the public
+[ForTesting screenshot collection](https://github.com/kakadd172-lab/ForTesting/tree/kiomet-screenshots/screenshots)
+identified ten consecutive gameplay captures as candidates. Their exact source
+blob SHAs and paths are recorded in `source_inventory.json` so they can be
+verified without copying potentially identifying game-session details into
+this repository. The images are from one match/session, so they provide
+temporal variety but not ten independent match samples.
+
+The detector-debug image with coloured bounding-box overlays and the
+landing/help-page captures are excluded. The ten candidates are not yet
+ground-truth labels: copy only reviewed, appropriate images into this folder,
+then annotate every visible tower and unit before setting
+`fully_annotated` to `true`.
