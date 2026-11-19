@@ -32,6 +32,18 @@ class TrackedEntity:
     missed_frames: int
 
 
+@dataclass(frozen=True)
+class EntityHistoryEntry:
+    """One frame's observed or temporarily missing state for a track."""
+
+    frame: int
+    bbox: BBox
+    identity: str | None
+    confidence: float | None
+    visible: bool
+    missed_frames: int
+
+
 def _validate_bbox(bbox: BBox) -> None:
     if len(bbox) != 4:
         raise ValueError("bbox must contain x, y, width and height")
@@ -71,6 +83,7 @@ class EntityTracker:
         max_missed_frames: int = 2,
         min_iou: float = 0.05,
         max_center_distance: float = 0.08,
+        max_history_per_track: int = 120,
     ) -> None:
         if not isinstance(max_missed_frames, int) or isinstance(max_missed_frames, bool) or max_missed_frames < 0:
             raise ValueError("max_missed_frames must be a non-negative integer")
@@ -78,9 +91,13 @@ class EntityTracker:
             raise ValueError("min_iou must be between 0 and 1")
         if max_center_distance < 0:
             raise ValueError("max_center_distance must be non-negative")
+        if not isinstance(max_history_per_track, int) or isinstance(max_history_per_track, bool) or max_history_per_track < 1:
+            raise ValueError("max_history_per_track must be a positive integer")
         self.max_missed_frames = max_missed_frames
         self.min_iou = float(min_iou)
         self.max_center_distance = float(max_center_distance)
+        self.max_history_per_track = max_history_per_track
+        self._history: dict[str, list[EntityHistoryEntry]] = {}
         self._frame = 0
         self._next_id = 1
         self._tracks: dict[str, TrackedEntity] = {}
@@ -93,6 +110,11 @@ class EntityTracker:
         self._frame = 0
         self._next_id = 1
         self._tracks.clear()
+        self._history.clear()
+
+    def history(self, track_id: str) -> tuple[EntityHistoryEntry, ...]:
+        """Return retained frame history, including the final expiry frame."""
+        return tuple(self._history.get(track_id, ()))
 
     def snapshot(self, *, include_missing: bool = True) -> tuple[TrackedEntity, ...]:
         tracks = self._tracks.values()
@@ -180,6 +202,21 @@ class EntityTracker:
                 last_seen_frame=self._frame,
                 missed_frames=0,
             )
+
+        # Record every track's state before pruning expired tracks. Missing
+        # frames retain the last known box but are explicitly marked invisible.
+        for track_id, track in updated.items():
+            entries = self._history.setdefault(track_id, [])
+            entries.append(EntityHistoryEntry(
+                frame=self._frame,
+                bbox=track.bbox,
+                identity=track.identity,
+                confidence=track.confidence,
+                visible=track.missed_frames == 0,
+                missed_frames=track.missed_frames,
+            ))
+            if len(entries) > self.max_history_per_track:
+                del entries[:-self.max_history_per_track]
 
         self._tracks = {
             track_id: track
