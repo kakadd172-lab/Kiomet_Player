@@ -90,6 +90,48 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertEqual(options["num_predict"], 4096)
         self.assertNotIn("num_thread", options)
 
+    def test_ollama_connection_drop_is_retried_once(self):
+        from PIL import Image
+        detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
+        response = unittest.mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "message": {"content": '{"entities": []}'},
+            "done_reason": "stop",
+        }
+        with (
+            patch(
+                "perception.vision_entity_detector.requests.post",
+                side_effect=[__import__("requests").exceptions.ConnectionError("remote closed"), response],
+            ) as request,
+            patch("perception.vision_entity_detector.sleep") as wait,
+        ):
+            result = detector._request_tile(Image.new("RGB", (320, 200)))
+        self.assertEqual(result, {"entities": []})
+        self.assertEqual(request.call_count, 2)
+        wait.assert_called_once_with(1.0)
+
+    def test_repeated_ollama_connection_drop_has_contextual_error(self):
+        from PIL import Image
+        import requests
+        detector = VisionEntityDetector(
+            model="qwen2.5vl:3b",
+            screen_recognizer=self.screen_recognizer,
+        )
+        with (
+            patch(
+                "perception.vision_entity_detector.requests.post",
+                side_effect=requests.exceptions.ConnectionError("remote closed"),
+            ) as request,
+            patch("perception.vision_entity_detector.sleep"),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "after 2 attempts.*320x200.*qwen2.5vl:3b",
+            ):
+                detector._request_tile(Image.new("RGB", (320, 200)))
+        self.assertEqual(request.call_count, 2)
+
     def test_explicit_cpu_thread_override_is_sent_to_ollama(self):
         from PIL import Image
         detector = VisionEntityDetector(
