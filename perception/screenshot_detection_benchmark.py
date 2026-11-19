@@ -193,6 +193,45 @@ def _normalize_name(value: str | None) -> str:
     return re.sub(r"[^a-z0-9]+", "", value.casefold()) if isinstance(value, str) else ""
 
 
+def _category_metrics_from_totals(
+    totals_by_category: dict[str, dict[str, int]],
+) -> dict[str, dict[str, int | float | None]]:
+    return {
+        category: {
+            **totals,
+            **_rates(
+                totals["true_positives"],
+                totals["false_positives"],
+                totals["false_negatives"],
+            ),
+        }
+        for category, totals in totals_by_category.items()
+    }
+
+
+def _category_metrics(
+    expected: list[dict[str, Any]],
+    predicted: list[dict[str, Any]],
+    iou_threshold: float,
+) -> dict[str, dict[str, int | float | None]]:
+    """Calculate independent detection metrics for towers and units."""
+    result = {}
+    for category in sorted(VALID_CATEGORIES):
+        category_expected = [item for item in expected if item["category"] == category]
+        category_predicted = [item for item in predicted if item["category"] == category]
+        matching = match_entities(category_expected, category_predicted, iou_threshold)
+        tp = matching["true_positives"]
+        fp = matching["false_positives"]
+        fn = matching["false_negatives"]
+        result[category] = {
+            "true_positives": tp,
+            "false_positives": fp,
+            "false_negatives": fn,
+            **_rates(tp, fp, fn),
+        }
+    return result
+
+
 def _rates(tp: int, fp: int, fn: int) -> dict[str, float | None]:
     precision = tp / (tp + fp) if tp + fp else None
     recall = tp / (tp + fn) if tp + fn else None
@@ -307,17 +346,7 @@ def run_benchmark(
             "false_positives": total_fp,
             "false_negatives": total_fn,
             **_rates(total_tp, total_fp, total_fn),
-            "by_category": {
-                category: {
-                    **totals,
-                    **_rates(
-                        totals["true_positives"],
-                        totals["false_positives"],
-                        totals["false_negatives"],
-                    ),
-                }
-                for category, totals in category_totals.items()
-            },
+            "by_category": _category_metrics_from_totals(category_totals),
             "identity_scored_matches": identity_scored,
             "identity_correct": identity_correct,
             "identity_accuracy": round(identity_correct / identity_scored, 4) if identity_scored else None,
