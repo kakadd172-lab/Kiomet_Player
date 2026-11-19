@@ -72,6 +72,20 @@ class TrackingBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["false_positives"], 1)
         self.assertEqual(result["false_negatives"], 1)
 
+    def test_matching_maximizes_valid_pairs_in_ambiguous_frame(self):
+        frames = [{
+            "frame_index": 1,
+            "expected": [entity("A", 0.1), entity("B", 0.0)],
+            "predicted": [
+                entity("p1", 0.05, track_id="T1"),
+                entity("p2", 0.16, track_id="T2"),
+            ],
+        }]
+        result = evaluate_tracking_frames(frames, iou_threshold=0.3)
+        self.assertEqual(result["true_positives"], 2)
+        self.assertEqual(result["false_positives"], 0)
+        self.assertEqual(result["false_negatives"], 0)
+
     def test_rejects_non_increasing_frame_indices(self):
         frames = [
             {"frame_index": 2, "expected": [], "predicted": []},
