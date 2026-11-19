@@ -63,6 +63,7 @@ class TrackingReplayTests(unittest.TestCase):
             self.assertEqual(pipeline.calls, ["01.png", "02.png"])
             self.assertEqual(report["frames_processed"], 2)
             self.assertEqual(report["frames"][0]["tracks"][0]["track_id"], "entity-000001")
+            self.assertEqual(report["frames"][0]["predicted"][0]["track_id"], "entity-000001")
             self.assertEqual(len(report["frames"][0]["source_sha256"]), 64)
             saved = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(saved["frames"][1]["source"], "02.png")
