@@ -404,6 +404,17 @@ class VisionEntityDetector:
                 continue
             deduplicated.append(candidate)
         self.pipeline_metrics = {
+            "model": self.model,
+            "configuration": {
+                "tiled": self.tiled,
+                "max_image_side": self.max_image_side,
+                "upscale": self.upscale,
+                "overlap": self.overlap,
+                "num_threads": self.num_threads,
+                "min_detector_confidence": self.min_detector_confidence,
+                "duplicate_iou": self.duplicate_iou,
+                "timeout_seconds": self.timeout,
+            },
             "source_width": width,
             "source_height": height,
             "tile_count": len(tiles),
