@@ -111,7 +111,7 @@ class EntityTracker:
 
         self._frame += 1
         previous = list(self._tracks.values())
-        candidates: dict[int, list[tuple[float, str]]] = {}
+        candidates: dict[int, list[tuple[float, float, str]]] = {}
         for index, observation in enumerate(current):
             scored = []
             for track in previous:
@@ -124,14 +124,14 @@ class EntityTracker:
                 if overlap >= self.min_iou or distance <= self.max_center_distance:
                     scored.append((overlap, -distance, track.track_id))
             scored.sort(reverse=True)
-            candidates[index] = [(score[0] + max(0.0, score[1]) * 1e-6, score[2]) for score in scored]
+            candidates[index] = scored
 
         # Augmenting paths maximize the number of matched observations instead
         # of allowing an early greedy match to strand another valid observation.
         assigned_track_to_observation: dict[str, int] = {}
 
         def assign(observation_index: int, visited: set[str]) -> bool:
-            for _, track_id in candidates[observation_index]:
+            for _, _, track_id in candidates[observation_index]:
                 if track_id in visited:
                     continue
                 visited.add(track_id)
