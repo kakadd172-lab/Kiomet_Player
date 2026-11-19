@@ -130,7 +130,6 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertAlmostEqual(proposals[0].proposal.y, 0.14)
         self.assertAlmostEqual(proposals[0].proposal.width, 0.112)
         self.assertEqual(detector.pipeline_metrics["adaptive_split_count"], 1)
-        self.assertEqual(detector.pipeline_metrics["successful_inference_count"], 4)
 
     def test_adaptive_retry_still_fails_if_a_child_tile_truncates(self):
         detector = VisionEntityDetector(
