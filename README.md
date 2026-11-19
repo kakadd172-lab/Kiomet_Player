@@ -199,6 +199,18 @@ Use `perception.tracking_replay` to process a directory of screenshots in filena
 
 Optional flags include `--model`, `--tiled`, `--native-resolution`, `--method`, and recognition thresholds. Filenames must represent chronological order. The runner does not download screenshots or infer ground-truth labels; copy the desired sequence from the ForTesting repository into a local folder first. Screenshots from different matches or sessions should be replayed separately so track IDs are not incorrectly carried across unrelated scenes.
 
+### Compare two tracking configurations on the same replay
+
+Run the same screenshot sequence twice, changing one setting at a time. Each report stores per-frame and total runtime, detector configuration, source-image hashes, detections, and track IDs. For example:
+
+```powershell
+.\\.venv\\Scripts\\python.exe -m perception.tracking_replay --source path\\to\\screenshots --model qwen3-vl:4b-instruct --output benchmark_results\\baseline.json
+.\\.venv\\Scripts\\python.exe -m perception.tracking_replay --source path\\to\\screenshots --model qwen3-vl:4b-instruct --tiled --output benchmark_results\\tiled.json
+.\\.venv\\Scripts\\python.exe -m perception.tracking_replay_compare --first benchmark_results\\baseline.json --second benchmark_results\\tiled.json --output benchmark_results\\comparison.json
+```
+
+The comparison refuses to score reports unless frame order and source SHA256 hashes match exactly. It reports configuration differences, per-frame detection deltas, total runtime change, unique track counts, observed track lifetimes, and a track-persistence ratio. Persistence is only a diagnostic proxy: it can reward a consistently wrong association. Detection counts are not precision/recall, and ID-switch accuracy requires manually linked ground-truth labels. For fair timing, use the same machine, close competing workloads, warm up the model consistently, and repeat each configuration several times.
+
 ### Run the labelled icon-matcher benchmark
 
 The benchmark compares manually labelled screenshot crops against all registered tower or unit templates. It writes a JSON report to the ignored `benchmark_results/` directory:
