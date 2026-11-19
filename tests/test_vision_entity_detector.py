@@ -86,7 +86,7 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertIn("neutral/grey entities", prompt)
         self.assertIn("coloured/player-controlled entities", prompt)
         self.assertIn("including the King and special entities", prompt)
-        self.assertIn("do not merge nearby separate symbols", prompt)
+        self.assertIn("Do not merge nearby separate symbols", prompt)
 
     def test_request_records_ollama_timing_metrics(self):
         from PIL import Image
