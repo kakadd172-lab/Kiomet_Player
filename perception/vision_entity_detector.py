@@ -119,6 +119,7 @@ class VisionEntityDetector:
         upscale: float = 1.0,
         max_image_side: int = 960,
         tiled: bool = False,
+        num_threads: int = 4,
         min_detector_confidence: float = 0.35,
         duplicate_iou: float = 0.45,
         screen_recognizer: ScreenEntityRecognizer | None = None,
@@ -135,6 +136,8 @@ class VisionEntityDetector:
             raise ValueError("max_image_side must be an integer of at least 256")
         if not isinstance(tiled, bool):
             raise ValueError("tiled must be a boolean")
+        if not isinstance(num_threads, int) or isinstance(num_threads, bool) or num_threads < 1:
+            raise ValueError("num_threads must be a positive integer")
         if not 0 <= min_detector_confidence <= 1:
             raise ValueError("min_detector_confidence must be between 0 and 1")
         if not 0 < duplicate_iou <= 1:
@@ -146,6 +149,7 @@ class VisionEntityDetector:
         self.upscale = float(upscale)
         self.max_image_side = max_image_side
         self.tiled = tiled
+        self.num_threads = num_threads
         self.min_detector_confidence = float(min_detector_confidence)
         self.duplicate_iou = float(duplicate_iou)
         self.screen_recognizer = screen_recognizer or ScreenEntityRecognizer()
@@ -222,7 +226,7 @@ class VisionEntityDetector:
                 },
                 "stream": False,
                 "keep_alive": "5m",
-                "options": {"temperature": 0.1, "num_predict": 700},
+                "options": {"temperature": 0.1, "num_predict": 700, "num_thread": self.num_threads},
             },
             timeout=self.timeout,
         )
@@ -231,7 +235,13 @@ class VisionEntityDetector:
         content = payload.get("message", {}).get("content")
         if not isinstance(content, str) or not content.strip():
             raise ValueError("Vision model returned an empty response")
-        parsed = json.loads(content)
+        try:
+            parsed = json.loads(content)
+        except json.JSONDecodeError as error:
+            raise ValueError(
+                f"Vision model returned malformed JSON ({error.msg} at line {error.lineno}, column {error.colno}); "
+                "try a smaller image or a model with reliable structured-output support"
+            ) from error
         if not isinstance(parsed, dict) or not isinstance(parsed.get("entities"), list):
             raise ValueError("Vision model JSON must contain an entities array")
         return parsed
