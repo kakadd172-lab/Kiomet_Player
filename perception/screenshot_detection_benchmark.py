@@ -257,7 +257,7 @@ def run_benchmark(
     min_score: float = 0.65,
     min_margin: float = 0.10,
     timeout: float = 180.0,
-    num_threads: int = 8,
+    num_threads: int | None = None,
     upscale: float = 1.0,
     overlap: float = 0.12,
     min_detector_confidence: float = 0.35,
