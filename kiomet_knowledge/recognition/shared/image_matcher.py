@@ -125,8 +125,34 @@ class ImageMatcher:
 
     @classmethod
     def _candidate_shape(cls, image: np.ndarray | str | Path) -> np.ndarray:
-        """Extract bright icon strokes while suppressing dark map backgrounds."""
+        """Extract bright, low-saturation icon strokes and reject coloured glow."""
         grayscale = cls._to_grayscale(image)
+
+        if isinstance(image, (str, Path)):
+            bgr = cv2.imread(str(image), cv2.IMREAD_UNCHANGED)
+            if bgr is None:
+                raise ValueError(f"Could not load candidate image: {image}")
+            if bgr.ndim == 2:
+                bgr = cv2.cvtColor(bgr, cv2.COLOR_GRAY2BGR)
+            elif bgr.ndim == 3 and bgr.shape[2] == 4:
+                bgr = bgr[:, :, :3]
+            elif bgr.ndim != 3 or bgr.shape[2] != 3:
+                raise ValueError(f"Unsupported candidate image shape: {bgr.shape!r}")
+        elif image.ndim == 2:
+            bgr = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        elif image.ndim == 3 and image.shape[2] in (3, 4):
+            bgr = image[:, :, :3]
+        else:
+            raise ValueError(f"Unsupported candidate image shape: {image.shape!r}")
+
+        if bgr.dtype != np.uint8:
+            bgr = cv2.normalize(bgr, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+        # Kiomet places pale icon strokes over saturated team-colour markers.
+        # A grayscale-only threshold can mistake the blue glow for foreground.
+        hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+        low_saturation = hsv[:, :, 1] <= 110
+
         minimum = int(np.min(grayscale))
         maximum = int(np.max(grayscale))
         if maximum <= minimum:
@@ -137,9 +163,14 @@ class ImageMatcher:
         )
         contrast_threshold = minimum + (maximum - minimum) * 0.45
         threshold = max(float(otsu_threshold), float(contrast_threshold))
-        _, foreground = cv2.threshold(
-            grayscale, threshold, 255, cv2.THRESH_BINARY
-        )
+        foreground = ((grayscale > threshold) & low_saturation).astype(np.uint8) * 255
+
+        # If colour filtering leaves too little signal, fall back to the
+        # grayscale foreground rather than silently returning an empty shape.
+        if cv2.countNonZero(foreground) < 3:
+            _, foreground = cv2.threshold(
+                grayscale, threshold, 255, cv2.THRESH_BINARY
+            )
 
         # Discard isolated compression/noise pixels without removing small
         # disconnected parts of a real icon.

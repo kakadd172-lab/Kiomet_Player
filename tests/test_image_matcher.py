@@ -52,6 +52,18 @@ class ImageMatcherTests(unittest.TestCase):
         self.assertIs(results[0].record, self.record)
         self.assertAlmostEqual(results[0].score, 1.0)
 
+    def test_shape_mode_ignores_saturated_blue_background(self):
+        blue_background = np.zeros((24, 24, 3), dtype=np.uint8)
+        blue_background[:] = (255, 110, 25)
+        cv2.circle(blue_background, (12, 12), 8, (255, 255, 255), -1)
+
+        plain_background = np.zeros((24, 24, 3), dtype=np.uint8)
+        cv2.circle(plain_background, (12, 12), 8, (255, 255, 255), -1)
+
+        blue_shape = ImageMatcher._candidate_shape(blue_background)
+        plain_shape = ImageMatcher._candidate_shape(plain_background)
+        np.testing.assert_array_equal(blue_shape, plain_shape)
+
     def test_unknown_matching_method_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "method"):
             self.matcher.match(self.candidate, method="unknown")
