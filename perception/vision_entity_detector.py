@@ -67,8 +67,8 @@ def _load_rgb(image: np.ndarray | str | Path) -> Image.Image:
 def _tile_bounds(width: int, height: int, overlap: float) -> list[tuple[str, int, int, int, int]]:
     if not isinstance(overlap, (int, float)) or isinstance(overlap, bool) or not 0 <= overlap < 0.5:
         raise ValueError("overlap must be between 0 and 0.5")
-    tile_width = min(width, int(round(width * (0.5 + overlap / 2)))
-    tile_height = min(height, int(round(height * (0.5 + overlap / 2)))
+    tile_width = min(width, int(round(width * (0.5 + overlap / 2))))
+    tile_height = min(height, int(round(height * (0.5 + overlap / 2))))
     step_x = max(1, width - tile_width)
     step_y = max(1, height - tile_height)
     x_positions = sorted({0, max(0, width - tile_width)})
