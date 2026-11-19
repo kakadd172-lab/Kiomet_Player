@@ -178,7 +178,7 @@ class VisionEntityDetector:
             "by itself, but do not discard an icon merely because it has a glow or badge behind it. "
             "Return a tight box around the complete visible symbol, including meaningful "
             "detached parts that clearly belong to it, while excluding most surrounding map. "
-            "Do not invent entities and do not merge nearby separate symbols. "
+            "Do not invent entities. Do not merge nearby separate symbols. "
             f"The attached crop is exactly {tile_width} pixels wide and {tile_height} pixels "
             "high. Coordinates must be normalized fractions from 0 to 1 relative to this "
             "attached crop only, not the original screenshot. Origin (0,0) is its top-left. "
@@ -188,7 +188,7 @@ class VisionEntityDetector:
             "('tower', 'unit', or 'unknown'), bbox with numeric x/y/width/height, and a "
             "numeric confidence from 0 to 1. Return all clearly visible entities rather than "
             "stopping after a small handful. If none are visible, return an empty array. "
-            "Do not use fixed confidence values, copy example coordinates, or add explanations."
+            "Do not copy example coordinates. Do not use fixed confidence values or add explanations."
         )
 
     def _request_tile(self, tile: Image.Image) -> dict[str, Any]:
