@@ -154,6 +154,13 @@ def run_replay(
             "method": method,
             "min_score": min_score,
             "min_margin": min_margin,
+            "tiled": active_pipeline.detector.tiled,
+            "max_image_side": active_pipeline.detector.max_image_side,
+            "upscale": active_pipeline.detector.upscale,
+            "overlap": active_pipeline.detector.overlap,
+            "num_threads": active_pipeline.detector.num_threads,
+            "min_detector_confidence": active_pipeline.detector.min_detector_confidence,
+            "timeout_seconds": active_pipeline.detector.timeout,
         },
         "frames": frames,
         "notes": [
