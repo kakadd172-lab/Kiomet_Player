@@ -98,6 +98,25 @@ def _tile_bounds(width: int, height: int, overlap: float) -> list[tuple[str, int
     return result
 
 
+def _timing_summary(metrics: list[dict[str, Any]], field: str) -> dict[str, float | int | None]:
+    """Summarize a timing field without treating missing Ollama timings as zero."""
+    values = [
+        float(item[field])
+        for item in metrics
+        if isinstance(item.get(field), (int, float))
+        and not isinstance(item.get(field), bool)
+    ]
+    if not values:
+        return {"count": 0, "total_ms": None, "mean_ms": None, "min_ms": None, "max_ms": None}
+    return {
+        "count": len(values),
+        "total_ms": round(sum(values), 3),
+        "mean_ms": round(sum(values) / len(values), 3),
+        "min_ms": round(min(values), 3),
+        "max_ms": round(max(values), 3),
+    }
+
+
 def _iou(first: RegionProposal, second: RegionProposal) -> float:
     left = max(first.x, second.x)
     top = max(first.y, second.y)
@@ -388,7 +407,23 @@ class VisionEntityDetector:
             "source_width": width,
             "source_height": height,
             "tile_count": len(tiles),
+            "successful_inference_count": len(self.inference_metrics),
             "proposal_duration_ms": round((perf_counter() - pipeline_started) * 1000.0, 3),
+            "timings": {
+                field: _timing_summary(self.inference_metrics, field)
+                for field in (
+                    "preprocessing_ms",
+                    "request_wall_ms",
+                    "ollama_total_ms",
+                    "ollama_load_ms",
+                    "ollama_prompt_eval_ms",
+                    "ollama_generation_ms",
+                )
+            },
+            "payload": {
+                "total_png_bytes": sum(item["png_bytes"] for item in self.inference_metrics),
+                "total_base64_chars": sum(item["base64_chars"] for item in self.inference_metrics),
+            },
         }
         return deduplicated
 
