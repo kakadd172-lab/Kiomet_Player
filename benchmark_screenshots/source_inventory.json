@@ -13,9 +13,19 @@
     "All entries remain unannotated. Do not set fully_annotated=true until every visible tower and unit marker has been checked.",
     "The separate entities_20261119_173032.png image contains detector-debug overlays and is excluded from clean evaluation candidates.",
     "Landing-page and help-page screenshots are excluded.",
-    "Four additional November 19 observer captures were visually inspected and added: 180021, 180027, 180032, and 180037. They are consecutive views of one gameplay state/session; 180016 is a menu/landing screen and is excluded."
+    "Four additional November 19 observer captures were visually inspected and added: 180021, 180027, 180032, and 180037. They are consecutive views of one gameplay state/session; 180016 is a menu/landing screen and is excluded.",
+    "The 2026-11-18 225444 capture was visually confirmed as an in-game map and added after the initial ten-image inventory; 225434 and 225439 are landing-page captures and remain excluded."
   ],
   "screenshots": [
+    {
+      "image": "screen_20261118_225444.png",
+      "source_path": "screenshots/screen_20261118_225444.png",
+      "source_blob_sha": "186881496796145293d87d3a1d2170e7ad3e9d07",
+      "source_bytes": 215655,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225444.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
     {
       "image": "screen_20261118_225449.png",
       "source_path": "screenshots/screen_20261118_225449.png",
