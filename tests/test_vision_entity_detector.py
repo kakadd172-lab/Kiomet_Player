@@ -47,6 +47,14 @@ class VisionEntityDetectorTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             _tile_bounds(100, 100, 0.5)
 
+    def test_prompt_defines_tile_relative_coordinates_and_categories(self):
+        prompt = VisionEntityDetector._prompt(280, 315)
+        self.assertIn("exactly 280 pixels wide and 315 pixels high", prompt)
+        self.assertIn("relative to this attached crop only", prompt)
+        self.assertIn("bbox.width and bbox.height are dimensions", prompt)
+        self.assertIn("mobile troop/vehicle/ship icon", prompt)
+        self.assertIn("Do not copy example coordinates", prompt)
+
     def test_proposals_are_mapped_to_full_screenshot_coordinates(self):
         responses = [
             {"entities": [{
