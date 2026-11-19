@@ -48,6 +48,17 @@ class TrackingBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["reacquisitions"], 1)
         self.assertEqual(result["id_switches"], 0)
 
+    def test_gap_followed_by_new_track_is_fragmentation_not_reacquisition(self):
+        frames = [
+            {"frame_index": 1, "expected": [entity("A")], "predicted": [entity("p", track_id="T1")]},
+            {"frame_index": 2, "expected": [entity("A")], "predicted": []},
+            {"frame_index": 3, "expected": [entity("A")], "predicted": [entity("p", track_id="T2")]},
+        ]
+        result = evaluate_tracking_frames(frames)
+        self.assertEqual(result["fragmentations"], 1)
+        self.assertEqual(result["reacquisitions"], 0)
+        self.assertEqual(result["id_switches"], 1)
+
     def test_counts_false_positives_and_false_negatives(self):
         frames = [{
             "frame_index": 1,
