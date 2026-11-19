@@ -73,8 +73,9 @@ at the selected IoU threshold.
   predicted track ID than its previous matched observation.
 - **Fragmentation:** a previously matched entity becomes unmatched and later
   becomes matched again.
-- **Reacquisition:** a fragmentation followed by a later match. It is reported
-  separately to make temporary detection gaps visible.
+- **Reacquisition:** a fragmentation followed by a later match with the same
+  track ID as before the gap. A return under a different ID is a fragmentation
+  and an ID switch, but not a same-track reacquisition.
 - **Precision / recall / F1:** frame-level detection correspondence, not proof
   of persistent identity correctness.
 - **Mean matched IoU:** spatial overlap for matched frame-level detections.
