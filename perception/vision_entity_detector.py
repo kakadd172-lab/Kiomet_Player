@@ -1,17 +1,17 @@
 """Use a local vision model to propose Kiomet entity boxes, then verify crops.
 
 The VLM is a region proposer, not the final identity authority. Its boxes are
-mapped from overlapping tiles into full-screen coordinates and passed to the
-deterministic tower/unit recognizers. Unknown categories are intentionally
-left out rather than guessed.
+mapped from either a full-frame request or overlapping tiles into full-screen
+coordinates and passed to deterministic tower/unit recognizers. Unknown
+categories are intentionally left out rather than guessed.
 """
 from __future__ import annotations
 
 import base64
 import json
 import warnings
-from time import perf_counter
 from dataclasses import dataclass
+from time import perf_counter
 from io import BytesIO
 from pathlib import Path
 from typing import Any
