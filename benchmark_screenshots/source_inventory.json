@@ -12,7 +12,8 @@
     "They show a useful progression of owned territory, towers, neutral map nodes, and unit movement.",
     "All entries remain unannotated. Do not set fully_annotated=true until every visible tower and unit marker has been checked.",
     "The separate entities_20261119_173032.png image contains detector-debug overlays and is excluded from clean evaluation candidates.",
-    "Landing-page and help-page screenshots are excluded."
+    "Landing-page and help-page screenshots are excluded.",
+    "Four additional November 19 observer captures were visually inspected and added: 180021, 180027, 180032, and 180037. They are consecutive views of one gameplay state/session; 180016 is a menu/landing screen and is excluded."
   ],
   "screenshots": [
     {
@@ -102,6 +103,42 @@
       "source_blob_sha": "5d8e15f0ee4a454893be1e34fa14c126e7815779",
       "source_bytes": 189741,
       "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225535.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261119_180021.png",
+      "source_path": "KiometAI/screenshots/screen_20261119_180021.png",
+      "source_blob_sha": "df99bef42d6e5af1ce24065226238b9c862a3932",
+      "source_bytes": 186893,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/KiometAI/screenshots/screen_20261119_180021.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261119_180027.png",
+      "source_path": "KiometAI/screenshots/screen_20261119_180027.png",
+      "source_blob_sha": "3cb87e2fa19a026e2174f679cf3c1cdda4224e29",
+      "source_bytes": 199424,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/KiometAI/screenshots/screen_20261119_180027.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261119_180032.png",
+      "source_path": "KiometAI/screenshots/screen_20261119_180032.png",
+      "source_blob_sha": "3f7712745d6dd3974a60e00ded6f707b4adb1ef2",
+      "source_bytes": 201891,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/KiometAI/screenshots/screen_20261119_180032.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261119_180037.png",
+      "source_path": "KiometAI/screenshots/screen_20261119_180037.png",
+      "source_blob_sha": "aef013f6d3ac16fd54dcccd63a158d5ccd403356",
+      "source_bytes": 202294,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/KiometAI/screenshots/screen_20261119_180037.png",
       "status": "candidate_unannotated",
       "fully_annotated": false
     }
