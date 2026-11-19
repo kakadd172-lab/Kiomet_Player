@@ -65,15 +65,45 @@ class VisionEntityDetectorTests(unittest.TestCase):
         request.assert_called_once()
         self.assertEqual(request.call_args.args[0].size, (100, 100))
 
-    def test_malformed_model_json_skips_tile_instead_of_crashing(self):
+    def test_malformed_model_json_fails_frame_instead_of_silently_skipping_tile(self):
         detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
         with patch.object(
             detector,
             "_request_tile",
             side_effect=ValueError("Vision model returned malformed JSON (bad token at line 1, column 2)"),
         ):
-            with self.assertWarns(RuntimeWarning):
-                self.assertEqual(detector.propose_regions(self.image), [])
+            with self.assertRaisesRegex(ValueError, "malformed JSON"):
+                detector.propose_regions(self.image)
+
+    def test_output_token_limit_is_increased(self):
+        from PIL import Image
+        detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
+        response = unittest.mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "message": {"content": '{"entities": []}'},
+            "done_reason": "stop",
+        }
+        with patch("perception.vision_entity_detector.requests.post", return_value=response) as request:
+            detector._request_tile(Image.new("RGB", (320, 200)))
+        self.assertEqual(
+            request.call_args.kwargs["json"]["options"]["num_predict"],
+            4096,
+        )
+
+    def test_truncated_ollama_response_is_rejected_before_json_parsing(self):
+        from PIL import Image
+        detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
+        response = unittest.mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "message": {"content": '{"entities": [{"category": "tower"'},
+            "done_reason": "length",
+            "eval_count": 4096,
+        }
+        with patch("perception.vision_entity_detector.requests.post", return_value=response):
+            with self.assertRaisesRegex(ValueError, "truncated.*output-token limit"):
+                detector._request_tile(Image.new("RGB", (320, 200)))
 
     def test_tiles_cover_full_image_with_overlap(self):
         tiles = _tile_bounds(100, 100, 0.12)
