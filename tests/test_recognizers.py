@@ -24,9 +24,10 @@ class CategoryRecognizerTests(unittest.TestCase):
         self.tower_record = self._record(root, "tower.circle", "tower", "Circle", circle)
         self.other_tower = self._record(root, "tower.square", "tower", "Square", square)
         self.troop_record = self._record(root, "unit.circle", "unit", "Circle Unit", circle)
+        self.other_troop = self._record(root, "unit.square", "unit", "Square Unit", square)
 
         self.towers = TowerRecognizer([self.tower_record, self.other_tower])
-        self.troops = TroopRecognizer([self.troop_record])
+        self.troops = TroopRecognizer([self.troop_record, self.other_troop])
         self.circle_crop = cv2.cvtColor(circle, cv2.COLOR_BGRA2BGR)
 
     @staticmethod
