@@ -36,6 +36,27 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertEqual(detector.upscale, 1.0)
         self.assertEqual(detector.num_threads, 8)
 
+    def test_native_resolution_is_supported(self):
+        detector = VisionEntityDetector(
+            screen_recognizer=self.screen_recognizer,
+            max_image_side=None,
+        )
+        self.assertIsNone(detector.max_image_side)
+        from PIL import Image
+        with patch.object(detector, "_request_tile", return_value={"entities": []}) as request:
+            detector.propose_regions(self.image)
+        request.assert_called_once()
+        self.assertEqual(request.call_args.args[0].size, (100, 100))
+
+    def test_invalid_max_image_side_values_are_rejected(self):
+        for value in (255, 0, -1, 960.0, True):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    VisionEntityDetector(
+                        screen_recognizer=self.screen_recognizer,
+                        max_image_side=value,
+                    )
+
     def test_default_detector_requests_one_full_frame(self):
         detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
         with patch.object(detector, "_request_tile", return_value={"entities": []}) as request:
