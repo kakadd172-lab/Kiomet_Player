@@ -43,6 +43,35 @@ class ScreenshotDetectionBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["false_negatives"], 0)
         self.assertTrue(result["matches"][0]["identity_correct"])
 
+    def test_matching_finds_maximum_number_of_valid_pairs(self):
+        # Expected A overlaps both predictions, preferring p1 by IoU.
+        # Expected B overlaps only p1. Greedy matching would consume p1 for
+        # A and incorrectly leave B unmatched; reassignment should match both.
+        expected = [
+            self.entity("A", bbox={"x": 0.1, "y": 0.1, "width": 0.2, "height": 0.2}),
+            self.entity("B", bbox={"x": 0.04, "y": 0.1, "width": 0.2, "height": 0.2}),
+        ]
+        predicted = [
+            {
+                "id": "p1", "category": "tower",
+                "bbox": {"x": 0.09, "y": 0.1, "width": 0.2, "height": 0.2},
+                "recognized_name": "Radar",
+            },
+            {
+                "id": "p2", "category": "tower",
+                "bbox": {"x": 0.16, "y": 0.1, "width": 0.2, "height": 0.2},
+                "recognized_name": "Radar",
+            },
+        ]
+        result = match_entities(expected, predicted, 0.5)
+        self.assertEqual(result["true_positives"], 2)
+        self.assertEqual(result["false_positives"], 0)
+        self.assertEqual(result["false_negatives"], 0)
+        self.assertEqual(
+            {match["expected_id"]: match["predicted_id"] for match in result["matches"]},
+            {"A": "p2", "B": "p1"},
+        )
+
     def test_category_mismatch_is_false_positive_and_false_negative(self):
         result = match_entities(
             [self.entity(category="tower")],
