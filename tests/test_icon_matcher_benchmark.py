@@ -42,9 +42,23 @@ class BenchmarkLabelTests(unittest.TestCase):
 
     def test_rejects_duplicate_case_names(self):
         with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "first.png").write_bytes(b"placeholder")
             manifest = {
                 "schema_version": 1,
-                "cases": [{"name": "same"}, {"name": "same"}],
+                "cases": [
+                    {
+                        "name": "same",
+                        "image": "first.png",
+                        "category": "tower",
+                        "expected_name": "Radar",
+                    },
+                    {
+                        "name": "same",
+                        "image": "first.png",
+                        "category": "tower",
+                        "expected_name": "Radar",
+                    },
+                ],
             }
             with self.assertRaisesRegex(ValueError, "Duplicate"):
                 load_labels(self.write_manifest(directory, manifest))

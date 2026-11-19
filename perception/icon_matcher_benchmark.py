@@ -125,13 +125,14 @@ def run_benchmark(
         category_records = (
             knowledge.towers if category == "tower" else knowledge.troops
         )
-        # Rank against the complete category catalogue, then display only top-k.
+        # Rank against the complete category catalogue. top_k controls only
+        # how many candidates are included in the report, not confidence.
         all_ranked = matcher.match(
             image_path, category=category, top_k=len(category_records)
         )
         displayed = all_ranked[:top_k]
         assessment = assess_matches(
-            displayed, min_score=min_score, min_margin=min_margin
+            all_ranked, min_score=min_score, min_margin=min_margin
         )
         expected_rank = next(
             (
@@ -140,7 +141,7 @@ def run_benchmark(
             ),
             None,
         )
-        top = displayed[0] if displayed else None
+        top = all_ranked[0] if all_ranked else None
 
         results.append({
             "sample": name,
@@ -196,7 +197,7 @@ def run_benchmark(
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "source_screenshot": document.get("source_screenshot"),
         "label_source": document.get("label_source"),
-        "matcher": "ImageMatcher grayscale alpha-masked absolute-difference baseline",
+        "matcher": "ImageMatcher grayscale comparison with template-alpha masking",
         "top_k": top_k,
         "summary": summary,
         "results": results,
