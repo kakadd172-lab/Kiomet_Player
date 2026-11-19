@@ -226,6 +226,10 @@ def run_benchmark(
     )
     per_image = []
     total_tp = total_fp = total_fn = 0
+    category_totals = {
+        category: {"true_positives": 0, "false_positives": 0, "false_negatives": 0}
+        for category in sorted(VALID_CATEGORIES)
+    }
     identity_scored = identity_correct = 0
 
     for case in cases:
@@ -257,6 +261,14 @@ def run_benchmark(
         total_tp += tp
         total_fp += fp
         total_fn += fn
+        for category in VALID_CATEGORIES:
+            category_expected = [item for item in expected if item["category"] == category]
+            category_predicted = [item for item in predictions if item["category"] == category]
+            category_match = match_entities(category_expected, category_predicted, iou_threshold)
+            totals = category_totals[category]
+            totals["true_positives"] += category_match["true_positives"]
+            totals["false_positives"] += category_match["false_positives"]
+            totals["false_negatives"] += category_match["false_negatives"]
         for match in matching["matches"]:
             if match["identity_scored"]:
                 identity_scored += 1
@@ -295,6 +307,17 @@ def run_benchmark(
             "false_positives": total_fp,
             "false_negatives": total_fn,
             **_rates(total_tp, total_fp, total_fn),
+            "by_category": {
+                category: {
+                    **totals,
+                    **_rates(
+                        totals["true_positives"],
+                        totals["false_positives"],
+                        totals["false_negatives"],
+                    ),
+                }
+                for category, totals in category_totals.items()
+            },
             "identity_scored_matches": identity_scored,
             "identity_correct": identity_correct,
             "identity_accuracy": round(identity_correct / identity_scored, 4) if identity_scored else None,
