@@ -189,6 +189,16 @@ The tracking replay evaluator measures frame-level detection quality, ID switche
 
 The example path is a location for a replay you create; no real gameplay labels or tracking results are included yet. Do not interpret synthetic unit-test results as measured gameplay accuracy.
 
+### Replay real gameplay screenshots through the tracker
+
+Use `perception.tracking_replay` to process a directory of screenshots in filename order. It resets track IDs at the start of each replay, exports per-frame track snapshots and source-image SHA256 hashes, and can write annotated PNGs:
+
+```powershell
+.\\.venv\\Scripts\\python.exe -m perception.tracking_replay --source path\\to\\screenshots --output benchmark_results\\replay.json --annotated-dir benchmark_results\\annotated
+```
+
+Optional flags include `--model`, `--tiled`, `--native-resolution`, `--method`, and recognition thresholds. Filenames must represent chronological order. The runner does not download screenshots or infer ground-truth labels; copy the desired sequence from the ForTesting repository into a local folder first. Screenshots from different matches or sessions should be replayed separately so track IDs are not incorrectly carried across unrelated scenes.
+
 ### Run the labelled icon-matcher benchmark
 
 The benchmark compares manually labelled screenshot crops against all registered tower or unit templates. It writes a JSON report to the ignored `benchmark_results/` directory:
