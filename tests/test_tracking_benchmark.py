@@ -78,7 +78,7 @@ class TrackingBenchmarkTests(unittest.TestCase):
             "expected": [entity("A", 0.1), entity("B", 0.0)],
             "predicted": [
                 entity("p1", 0.05, track_id="T1"),
-                entity("p2", 0.16, track_id="T2"),
+                entity("p2", 0.14, track_id="T2"),
             ],
         }]
         result = evaluate_tracking_frames(frames, iou_threshold=0.3)
