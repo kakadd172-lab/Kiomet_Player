@@ -87,7 +87,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--max-image-side", type=int, default=960, help="Resize the model input so its longest side is at most this many pixels.")
     parser.add_argument("--threads", type=int, default=8, help="Limit Ollama CPU inference threads.")
-    parser.add_argument("--tiled", action="store_true", help="Use four overlapping tiles instead of one full-screen pass.")
+    parser.add_argument("--tiled", action="store_true", help="Use up to four overlapping image tiles instead of one full-screen pass.")
     parser.add_argument("--min-detector-confidence", type=float, default=0.35)
     parser.add_argument("--min-score", type=float, default=0.65)
     parser.add_argument("--min-margin", type=float, default=0.10)
@@ -124,6 +124,9 @@ def main() -> int:
 
     print(f"Screenshot: {screenshot}")
     print(f"Model: {args.model}")
+    with Image.open(screenshot) as source_image:
+        input_width, input_height = source_image.size
+    print(f"Input image: {input_width}x{input_height}")
     print("Proposing regions in " + ("four overlapping tiles..." if args.tiled else "one resized full-screen image..."))
     results = detector.detect(
         screenshot,
@@ -139,6 +142,8 @@ def main() -> int:
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "proposal_count": len(results),
         "accepted_count": sum(item.recognition.accepted for item in results),
+        "pipeline_metrics": detector.pipeline_metrics,
+        "inference_metrics": detector.inference_metrics,
         "entities": [serialize_result(item) for item in results],
         "limitations": [
             "The vision model proposes boxes and may miss or invent regions.",
@@ -164,6 +169,27 @@ def main() -> int:
             f"detector={item.detector_confidence:.2f}, "
             f"match={item.recognition.top_score:.2f})"
         )
+    print()
+    print("Inference diagnostics:")
+    for index, metric in enumerate(detector.inference_metrics, start=1):
+        print(
+            f"- Request {index} ({metric['tile']}): "
+            f"preprocess={metric['preprocessing_ms']:.1f} ms, "
+            f"wall={metric['request_wall_ms']:.1f} ms, "
+            f"Ollama total={metric['ollama_total_ms']} ms, "
+            f"load={metric['ollama_load_ms']} ms, "
+            f"prompt_eval={metric['ollama_prompt_eval_ms']} ms, "
+            f"generation={metric['ollama_generation_ms']} ms, "
+            f"prompt_tokens={metric['prompt_eval_tokens']}, "
+            f"generated_tokens={metric['generation_tokens']}, "
+            f"done={metric['done_reason']}"
+        )
+    print(
+        "Pipeline: "
+        f"proposals={detector.pipeline_metrics.get('proposal_duration_ms')} ms, "
+        f"recognition={detector.pipeline_metrics.get('recognition_duration_ms')} ms, "
+        f"total={detector.pipeline_metrics.get('total_duration_ms')} ms"
+    )
     print(f"JSON: {output_json}")
     print(f"Annotated image: {output_image}")
     return 0
