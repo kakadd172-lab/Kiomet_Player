@@ -1,0 +1,9 @@
+# Core runtime and perception dependencies
+numpy>=1.26
+opencv-python>=4.9
+Pillow>=10.0
+playwright>=1.40
+requests>=2.31
+
+# Optional development/testing
+# pytest>=8.0

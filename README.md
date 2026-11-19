@@ -58,6 +58,7 @@ The Python scripts use these packages:
 - `playwright` — browser automation and screenshot capture.
 - `Pillow` — image processing and contact-sheet generation.
 - `requests` — requests to the local Ollama API.
+- `numpy` and `opencv-python` — deterministic image matching and colour analysis.
 
 ## Setup
 
@@ -83,7 +84,7 @@ source .venv/bin/activate
 
 ```bash
 python -m pip install --upgrade pip
-python -m pip install playwright pillow requests
+python -m pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
@@ -126,6 +127,22 @@ python perception/game_state_extractor.py
 ```
 
 The script selects the newest `screen_*.png` file in `screenshots/` and asks the configured local vision model to return structured JSON. The output is experimental: visual models can miss, misclassify, or misread game elements.
+
+### Run the labelled icon-matcher benchmark
+
+The benchmark compares manually labelled screenshot crops against all registered tower or unit templates. It writes a JSON report to the ignored `benchmark_results/` directory:
+
+```bash
+python perception/icon_matcher_benchmark.py
+```
+
+Useful options include `--top-k 5`, `--min-score 0.65`, `--min-margin 0.10`, `--labels path/to/labels.json`, and `--output path/to/report.json`. The score thresholds are provisional heuristics, not probabilities. The current dataset is deliberately small; do not treat its accuracy as a reliable estimate of in-game performance. The clipped King crop remains disabled until it is recaptured.
+
+Run the automated tests with:
+
+```bash
+python -m unittest discover -s tests -v
+```
 
 ### Work with the reference icons
 
