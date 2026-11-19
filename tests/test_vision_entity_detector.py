@@ -214,11 +214,17 @@ class VisionEntityDetectorTests(unittest.TestCase):
         responses = [
             ValueError("Vision model response was truncated at Ollama's output-token limit"),
             ValueError("Vision model response was truncated at Ollama's output-token limit"),
+            ValueError("Vision model response was truncated at Ollama's output-token limit"),
         ]
         large_image = np.zeros((200, 200, 3), dtype=np.uint8)
-        with patch.object(detector, "_request_tile", side_effect=responses):
-            with self.assertRaisesRegex(ValueError, "truncated.*output-token limit"):
+        with patch.object(detector, "_request_tile", side_effect=responses) as request:
+            with self.assertRaisesRegex(
+                ValueError,
+                "truncated.*output-token limit.*cannot be subdivided further",
+            ):
                 detector.propose_regions(large_image)
+        self.assertEqual(request.call_count, 3)
+        self.assertEqual(detector.pipeline_metrics["adaptive_split_count"], 2)
 
     def test_truncated_ollama_response_is_rejected_before_json_parsing(self):
         from PIL import Image
