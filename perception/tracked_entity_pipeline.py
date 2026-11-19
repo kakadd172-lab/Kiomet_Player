@@ -70,6 +70,10 @@ class TrackedEntityPipeline:
     def snapshot(self, *, include_missing: bool = True) -> tuple[TrackedEntity, ...]:
         return self.tracker.snapshot(include_missing=include_missing)
 
+    def history(self, track_id: str):
+        """Return retained frame history for one stable entity ID."""
+        return self.tracker.history(track_id)
+
     def reset(self) -> None:
         self.tracker.reset()
         self.last_detections = ()
