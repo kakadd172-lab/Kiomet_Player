@@ -26,6 +26,7 @@ class VisionEntityDetectorTests(unittest.TestCase):
             screen_recognizer=self.screen_recognizer,
             overlap=0.12,
             upscale=1,
+            tiled=True,
         )
 
     def test_default_inference_settings_use_one_bounded_cpu_limited_pass(self):
