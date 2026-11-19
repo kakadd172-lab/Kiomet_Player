@@ -73,9 +73,9 @@ downscaling and send each full frame at its source resolution (subject to the
 model/server's own limits). For example:
 
 ```powershell
-.\\.venv\\Scripts\\python.exe -m perception.screenshot_detection_benchmark --max-image-side 720 --output benchmark_results/detection_720.json
-.\\.venv\\Scripts\\python.exe -m perception.screenshot_detection_benchmark --max-image-side 1440 --output benchmark_results/detection_1440.json
-.\\.venv\\Scripts\\python.exe -m perception.screenshot_detection_benchmark --max-image-side native --output benchmark_results/detection_native.json
+.\.venv\Scripts\python.exe -m perception.screenshot_detection_benchmark --max-image-side 720 --output benchmark_results/detection_720.json
+.\.venv\Scripts\python.exe -m perception.screenshot_detection_benchmark --max-image-side 1440 --output benchmark_results/detection_1440.json
+.\.venv\Scripts\python.exe -m perception.screenshot_detection_benchmark --max-image-side native --output benchmark_results/detection_native.json
 ```
 
 Use `--tiled` to split the screenshot into overlapping regions before
