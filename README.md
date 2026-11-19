@@ -127,7 +127,17 @@ Start Ollama first, open Kiomet and capture a screenshot, then run:
 python perception/game_state_extractor.py
 ```
 
-The script selects the newest `screen_*.png` file in `screenshots/` and asks the configured local vision model to return structured JSON. The output is experimental: visual models can miss, misclassify, or misread game elements.
+The script selects the newest `screen_*.png` file in `screenshots/` and asks the configured local vision model to return a schema-constrained JSON object. The response is then checked for required fields, valid entity coordinates, and confidence ranges before it is displayed. Truncated, malformed, or structurally inconsistent output is rejected rather than presented as game state. The output is still experimental: schema validation guarantees structure, not visual correctness.
+
+### Run a structured visual inspection
+
+For a concise visual report with an overview, evidence-backed observations, readable text, and uncertainties, run:
+
+```powershell
+.\.venv\Scripts\python.exe -m perception.llm_vision_test
+```
+
+Pass `--image path\to\screenshot.png` to inspect a specific screenshot. The report uses Ollama's JSON-schema output mode and validates the returned fields before printing. It deliberately avoids unrestricted prose, repeated filler, and unsupported claims. This improves consistency, but it does not make the vision model infallible.
 
 ### Classify proposed regions in a screenshot
 
