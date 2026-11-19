@@ -28,6 +28,13 @@ class VisionEntityDetectorTests(unittest.TestCase):
             upscale=1,
         )
 
+    def test_default_inference_settings_use_one_bounded_cpu_limited_pass(self):
+        detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
+        self.assertFalse(detector.tiled)
+        self.assertEqual(detector.max_image_side, 960)
+        self.assertEqual(detector.upscale, 1.0)
+        self.assertEqual(detector.num_threads, 4)
+
     def test_tiles_cover_full_image_with_overlap(self):
         tiles = _tile_bounds(100, 100, 0.12)
         self.assertEqual(len(tiles), 4)
