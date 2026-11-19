@@ -27,6 +27,7 @@ from .entity_recognizer import (
 
 DEFAULT_OLLAMA_URL = "http://localhost:11434/api/chat"
 DEFAULT_MODEL = "qwen3-vl:4b-instruct"
+MIN_SPLIT_DIMENSION = 64
 
 
 @dataclass(frozen=True)
@@ -67,10 +68,19 @@ def _load_rgb(image: np.ndarray | str | Path) -> Image.Image:
 def _tile_bounds(width: int, height: int, overlap: float) -> list[tuple[str, int, int, int, int]]:
     if not isinstance(overlap, (int, float)) or isinstance(overlap, bool) or not 0 <= overlap < 0.5:
         raise ValueError("overlap must be between 0 and 0.5")
-    tile_width = min(width, int(round(width * (0.5 + overlap / 2))))
-    tile_height = min(height, int(round(height * (0.5 + overlap / 2))))
-    step_x = max(1, width - tile_width)
-    step_y = max(1, height - tile_height)
+    if not isinstance(width, int) or not isinstance(height, int) or width < 1 or height < 1:
+        raise ValueError("width and height must be positive integers")
+
+    # Avoid splitting a short axis into tiny strips. This is especially
+    # important for panoramic or partial-screen captures.
+    tile_width = (
+        min(width, int(round(width * (0.5 + overlap / 2))))
+        if width >= MIN_SPLIT_DIMENSION else width
+    )
+    tile_height = (
+        min(height, int(round(height * (0.5 + overlap / 2))))
+        if height >= MIN_SPLIT_DIMENSION else height
+    )
     x_positions = sorted({0, max(0, width - tile_width)})
     y_positions = sorted({0, max(0, height - tile_height)})
     result = []
