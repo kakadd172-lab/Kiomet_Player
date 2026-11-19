@@ -61,6 +61,20 @@ class ImageMatcherTests(unittest.TestCase):
         self.assertEqual(results[0].record, self.record)
         self.assertGreater(results[0].score, 0.95)
 
+    def test_shape_mode_ignores_detached_components_below_icon(self):
+        candidate = self.candidate.copy()
+        cv2.circle(candidate, (1, 1), 1, (255, 255, 255), -1)
+        cv2.circle(candidate, (22, 1), 1, (255, 255, 255), -1)
+
+        extracted = ImageMatcher._candidate_shape(candidate)
+        dominant = ImageMatcher._dominant_component_shape(extracted)
+        expected = ImageMatcher._candidate_shape(self.candidate)
+
+        np.testing.assert_array_equal(dominant, expected)
+        results = self.matcher.match(candidate, method="shape")
+        self.assertEqual(results[0].record, self.record)
+        self.assertGreater(results[0].score, 0.99)
+
     def test_shape_mode_ignores_saturated_blue_background(self):
         blue_background = np.zeros((24, 24, 3), dtype=np.uint8)
         blue_background[:] = (255, 110, 25)
