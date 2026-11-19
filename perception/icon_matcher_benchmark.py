@@ -192,6 +192,50 @@ def run_benchmark(
         )
         top = all_ranked[0] if all_ranked else None
 
+        shape_diagnostics = None
+        if method == "shape":
+            candidate_masks = {
+                "saturation_filtered": matcher._candidate_shape(
+                    image_path, filter_saturation=True
+                ),
+                "luminance": matcher._candidate_shape(
+                    image_path, filter_saturation=False
+                ),
+                "high_brightness": matcher._candidate_shape(
+                    image_path, filter_saturation=False, contrast_fraction=0.72
+                ),
+            }
+            template_by_id = {
+                item.record.id: item.shape for item in matcher._templates
+            }
+            expected_shape = template_by_id[expected.id]
+            top_shape = template_by_id[top.record.id] if top else None
+
+            def mask_stats(mask: np.ndarray) -> dict[str, Any]:
+                points = cv2.findNonZero((mask > 0).astype(np.uint8))
+                bounds = cv2.boundingRect(points) if points is not None else None
+                return {
+                    "foreground_pixels": int(np.count_nonzero(mask)),
+                    "bounds": list(bounds) if bounds is not None else None,
+                }
+
+            shape_diagnostics = {
+                "candidate_masks": {
+                    name: {
+                        **mask_stats(mask),
+                        "score_vs_expected": round(
+                            matcher._shape_similarity(mask, expected_shape), 4
+                        ),
+                        "score_vs_top1": round(
+                            matcher._shape_similarity(mask, top_shape), 4
+                        ) if top_shape is not None else None,
+                    }
+                    for name, mask in candidate_masks.items()
+                },
+                "expected_template": mask_stats(expected_shape),
+                "top1_template": mask_stats(top_shape) if top_shape is not None else None,
+            }
+
         results.append({
             "sample": name,
             "image": image_path.relative_to(ROOT).as_posix(),
@@ -214,6 +258,7 @@ def run_benchmark(
                     "min_margin": min_margin,
                 },
             },
+            "shape_diagnostics": shape_diagnostics,
             "candidates": [
                 {
                     "id": item.record.id,
