@@ -193,7 +193,7 @@ class ImageMatcher:
                 int(stats[index, cv2.CC_STAT_AREA])
                 for index in range(1, component_count)
             )
-            minimum_area = max(2, int(round(largest_area * 0.01)))
+            minimum_area = max(2, int(round(largest_area * 0.03)))
             cleaned = np.zeros_like(foreground)
             for index in range(1, component_count):
                 area = int(stats[index, cv2.CC_STAT_AREA])
