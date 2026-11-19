@@ -46,6 +46,16 @@ class ImageMatcherTests(unittest.TestCase):
         self.assertEqual(len(self.matcher.match(self.candidate, category="tower")), 1)
         self.assertEqual(self.matcher.match(self.candidate, category="unit"), [])
 
+    def test_exact_template_is_top_match_in_shape_mode(self):
+        results = self.matcher.match(self.candidate, method="shape")
+        self.assertEqual(len(results), 1)
+        self.assertIs(results[0].record, self.record)
+        self.assertAlmostEqual(results[0].score, 1.0)
+
+    def test_unknown_matching_method_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "method"):
+            self.matcher.match(self.candidate, method="unknown")
+
     def test_top_k_must_be_positive(self):
         with self.assertRaises(ValueError):
             self.matcher.match(self.candidate, top_k=0)

@@ -23,14 +23,19 @@ class _Template:
     record: IconRecord
     grayscale: np.ndarray
     mask: np.ndarray
+    shape: np.ndarray
 
 
 class ImageMatcher:
-    """Compare one cropped icon against registered PNG templates.
+    """Compare cropped game icons against registered PNG templates.
 
-    Crops should contain one candidate icon with minimal surrounding UI.
-    Grayscale comparison reduces sensitivity to team-colour tinting.
+    The grayscale method is the original pixel-comparison baseline. The
+    experimental shape method thresholds the visible foreground, preserves
+    its aspect ratio, and compares normalized binary shapes. Neither method
+    produces calibrated probabilities.
     """
+
+    SHAPE_SIZE = 96
 
     def __init__(self, records: Iterable[IconRecord]) -> None:
         self._templates: list[_Template] = []
@@ -58,7 +63,8 @@ class ImageMatcher:
             if not np.any(visible):
                 raise ValueError(f"Template has no visible pixels: {record.template_path}")
 
-            self._templates.append(_Template(record, grayscale, visible))
+            shape = self._normalize_shape(visible * 255)
+            self._templates.append(_Template(record, grayscale, visible, shape))
 
         if not self._templates:
             raise ValueError("ImageMatcher requires at least one template")
@@ -89,38 +95,145 @@ class ImageMatcher:
             ).astype(np.uint8)
         return grayscale
 
+    @classmethod
+    def _normalize_shape(
+        cls,
+        mask: np.ndarray,
+        *,
+        size: int | None = None,
+    ) -> np.ndarray:
+        """Crop a binary foreground and fit it in a square without distortion."""
+        output_size = size or cls.SHAPE_SIZE
+        binary = np.where(mask > 0, 255, 0).astype(np.uint8)
+        points = cv2.findNonZero(binary)
+        if points is None:
+            return np.zeros((output_size, output_size), dtype=np.uint8)
+
+        x, y, width, height = cv2.boundingRect(points)
+        cropped = binary[y:y + height, x:x + width]
+        padding = max(2, int(round(max(width, height) * 0.12)))
+        side = max(width, height) + padding * 2
+        canvas = np.zeros((side, side), dtype=np.uint8)
+        left = (side - width) // 2
+        top = (side - height) // 2
+        canvas[top:top + height, left:left + width] = cropped
+        return cv2.resize(
+            canvas,
+            (output_size, output_size),
+            interpolation=cv2.INTER_NEAREST,
+        )
+
+    @classmethod
+    def _candidate_shape(cls, image: np.ndarray | str | Path) -> np.ndarray:
+        """Extract bright icon strokes while suppressing dark map backgrounds."""
+        grayscale = cls._to_grayscale(image)
+        minimum = int(np.min(grayscale))
+        maximum = int(np.max(grayscale))
+        if maximum <= minimum:
+            return np.zeros((cls.SHAPE_SIZE, cls.SHAPE_SIZE), dtype=np.uint8)
+
+        otsu_threshold, _ = cv2.threshold(
+            grayscale, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+        contrast_threshold = minimum + (maximum - minimum) * 0.45
+        threshold = max(float(otsu_threshold), float(contrast_threshold))
+        _, foreground = cv2.threshold(
+            grayscale, threshold, 255, cv2.THRESH_BINARY
+        )
+
+        # Discard isolated compression/noise pixels without removing small
+        # disconnected parts of a real icon.
+        component_count, labels, stats, _ = cv2.connectedComponentsWithStats(
+            foreground, connectivity=8
+        )
+        if component_count > 1:
+            largest_area = max(
+                int(stats[index, cv2.CC_STAT_AREA])
+                for index in range(1, component_count)
+            )
+            minimum_area = max(2, int(round(largest_area * 0.01)))
+            cleaned = np.zeros_like(foreground)
+            for index in range(1, component_count):
+                area = int(stats[index, cv2.CC_STAT_AREA])
+                if area >= minimum_area:
+                    cleaned[labels == index] = 255
+            if cv2.countNonZero(cleaned) > 0:
+                foreground = cleaned
+
+        return cls._normalize_shape(foreground)
+
+    @staticmethod
+    def _shape_similarity(candidate: np.ndarray, template: np.ndarray) -> float:
+        """Combine binary overlap with symmetric chamfer distance."""
+        candidate_mask = candidate > 0
+        template_mask = template > 0
+        candidate_count = int(np.count_nonzero(candidate_mask))
+        template_count = int(np.count_nonzero(template_mask))
+        if candidate_count == 0 or template_count == 0:
+            return 0.0
+
+        intersection = int(np.count_nonzero(candidate_mask & template_mask))
+        union = candidate_count + template_count - intersection
+        overlap = intersection / union if union else 0.0
+
+        distance_to_template = cv2.distanceTransform(
+            (~template_mask).astype(np.uint8), cv2.DIST_L2, 3
+        )
+        distance_to_candidate = cv2.distanceTransform(
+            (~candidate_mask).astype(np.uint8), cv2.DIST_L2, 3
+        )
+        candidate_to_template = float(
+            np.mean(distance_to_template[candidate_mask])
+        )
+        template_to_candidate = float(
+            np.mean(distance_to_candidate[template_mask])
+        )
+        mean_distance = (candidate_to_template + template_to_candidate) / 2.0
+        distance_score = max(0.0, 1.0 - mean_distance / 16.0)
+        return max(0.0, min(1.0, 0.4 * overlap + 0.6 * distance_score))
+
     def match(
         self,
         image: np.ndarray | str | Path,
         *,
         category: str | None = None,
         top_k: int = 5,
+        method: str = "grayscale",
     ) -> list[MatchResult]:
-        """Return top candidates for one icon crop, optionally category-filtered."""
+        """Return ranked candidates using grayscale or experimental shape matching."""
         if not isinstance(top_k, int) or isinstance(top_k, bool) or top_k < 1:
             raise ValueError("top_k must be a positive integer")
+        if method not in {"grayscale", "shape"}:
+            raise ValueError("method must be 'grayscale' or 'shape'")
 
         normalized_category = category.strip().lower() if isinstance(category, str) else None
         if category is not None and normalized_category not in {"tower", "unit"}:
             raise ValueError("category must be 'tower', 'unit', or None")
 
-        candidate = self._to_grayscale(image)
+        candidate = self._to_grayscale(image) if method == "grayscale" else None
+        candidate_shape = self._candidate_shape(image) if method == "shape" else None
         results: list[MatchResult] = []
 
         for template in self._templates:
             if normalized_category and template.record.category != normalized_category:
                 continue
 
-            height, width = template.grayscale.shape
-            interpolation = (
-                cv2.INTER_AREA
-                if candidate.shape[0] > height or candidate.shape[1] > width
-                else cv2.INTER_CUBIC
-            )
-            resized = cv2.resize(candidate, (width, height), interpolation=interpolation)
-            difference = cv2.absdiff(resized, template.grayscale)
-            error = float(np.mean(difference[template.mask.astype(bool)]))
-            score = max(0.0, min(1.0, 1.0 - error / 255.0))
+            if method == "shape":
+                score = self._shape_similarity(candidate_shape, template.shape)
+            else:
+                height, width = template.grayscale.shape
+                interpolation = (
+                    cv2.INTER_AREA
+                    if candidate.shape[0] > height or candidate.shape[1] > width
+                    else cv2.INTER_CUBIC
+                )
+                resized = cv2.resize(
+                    candidate, (width, height), interpolation=interpolation
+                )
+                difference = cv2.absdiff(resized, template.grayscale)
+                error = float(np.mean(difference[template.mask.astype(bool)]))
+                score = max(0.0, min(1.0, 1.0 - error / 255.0))
+
             results.append(MatchResult(template.record, score))
 
         results.sort(key=lambda result: (-result.score, result.record.id))
@@ -133,6 +246,9 @@ def match_icons(
     *,
     category: str | None = None,
     top_k: int = 5,
+    method: str = "grayscale",
 ) -> list[MatchResult]:
     """One-off matching helper."""
-    return ImageMatcher(records).match(image, category=category, top_k=top_k)
+    return ImageMatcher(records).match(
+        image, category=category, top_k=top_k, method=method
+    )

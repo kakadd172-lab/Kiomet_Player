@@ -93,10 +93,13 @@ def run_benchmark(
     top_k: int = 5,
     min_score: float = 0.65,
     min_margin: float = 0.10,
+    method: str = "grayscale",
 ) -> dict[str, Any]:
     """Run the labelled-crop benchmark and save a machine-readable report."""
     if not isinstance(top_k, int) or isinstance(top_k, bool) or top_k < 1:
         raise ValueError("top_k must be a positive integer")
+    if method not in {"grayscale", "shape"}:
+        raise ValueError("method must be 'grayscale' or 'shape'")
 
     document, cases = load_labels(labels_path)
     knowledge = load_knowledge()
@@ -128,7 +131,10 @@ def run_benchmark(
         # Rank against the complete category catalogue. top_k controls only
         # how many candidates are included in the report, not confidence.
         all_ranked = matcher.match(
-            image_path, category=category, top_k=len(category_records)
+            image_path,
+            category=category,
+            top_k=len(category_records),
+            method=method,
         )
         displayed = all_ranked[:top_k]
         assessment = assess_matches(
@@ -197,7 +203,12 @@ def run_benchmark(
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "source_screenshot": document.get("source_screenshot"),
         "label_source": document.get("label_source"),
-        "matcher": "ImageMatcher grayscale comparison with template-alpha masking",
+        "matcher": (
+            "ImageMatcher aspect-normalized binary shape comparison"
+            if method == "shape"
+            else "ImageMatcher grayscale comparison with template-alpha masking"
+        ),
+        "matcher_method": method,
         "top_k": top_k,
         "summary": summary,
         "results": results,
@@ -217,6 +228,7 @@ def run_benchmark(
     )
 
     print("KIOMET ICON MATCHER BENCHMARK")
+    print(f"Matcher method:          {method}")
     print(f"Samples evaluated:       {total}")
     print(f"Samples skipped:         {len(skipped)}")
     print(f"Top-1 correct:           {correct}/{total}")
@@ -242,6 +254,12 @@ def main() -> None:
     parser.add_argument("--labels", type=Path, default=DEFAULT_LABELS)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument(
+        "--method",
+        choices=("grayscale", "shape"),
+        default="grayscale",
+        help="Matching method to benchmark (shape is experimental).",
+    )
     parser.add_argument("--min-score", type=float, default=0.65)
     parser.add_argument("--min-margin", type=float, default=0.10)
     args = parser.parse_args()
@@ -256,7 +274,12 @@ def main() -> None:
             parser.error(f"{option} must be between 0 and 1")
 
     run_benchmark(
-        args.labels, args.output, args.top_k, args.min_score, args.min_margin
+        args.labels,
+        args.output,
+        args.top_k,
+        args.min_score,
+        args.min_margin,
+        args.method,
     )
 
 
