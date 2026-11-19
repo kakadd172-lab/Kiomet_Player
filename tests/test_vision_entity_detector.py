@@ -1,4 +1,5 @@
 import unittest
+from types import SimpleNamespace
 
 import requests
 from unittest.mock import patch
@@ -19,7 +20,7 @@ class FakeScreenRecognizer:
 
     def recognize_regions(self, screenshot, proposals, **options):
         self.calls.append((screenshot, list(proposals), options))
-        return []
+        return getattr(self, "results", [])
 
 
 class VisionEntityDetectorTests(unittest.TestCase):
@@ -459,6 +460,26 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertEqual(len(proposals), 1)
         self.assertAlmostEqual(proposals[0].detector_confidence, 0.95)
         self.assertEqual(proposals[0].tile_name, "bottom_right")
+
+    def test_cross_category_duplicate_keeps_stronger_recognition(self):
+        detector = VisionEntityDetector(
+            screen_recognizer=self.screen_recognizer,
+            tiled=False,
+        )
+        same_box = {"x": 0.4, "y": 0.4, "width": 0.1, "height": 0.1}
+        with patch.object(detector, "_request_tile", return_value={"entities": [
+            {"category": "tower", "bbox": same_box, "confidence": 0.95},
+            {"category": "unit", "bbox": same_box, "confidence": 0.80},
+        ]}):
+            self.screen_recognizer.results = [
+                SimpleNamespace(accepted=False, top_score=0.55, margin=0.01),
+                SimpleNamespace(accepted=True, top_score=0.90, margin=0.20),
+            ]
+            result = detector.detect(self.image)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].proposal.category, "unit")
+        self.assertEqual(detector.pipeline_metrics["cross_category_duplicates_removed"], 1)
 
     def test_detect_passes_proposals_to_deterministic_recognizer(self):
         proposal_response = [
