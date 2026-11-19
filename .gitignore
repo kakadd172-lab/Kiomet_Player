@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 .venv/
 venv/
 __pycache__/
@@ -21,7 +21,6 @@ Thumbs.db
 Desktop.ini
 
 # Generated diagnostics and temporary output
-benchmark_results/
 *.log
 *.tmp
 
