@@ -124,8 +124,13 @@ class ImageMatcher:
         )
 
     @classmethod
-    def _candidate_shape(cls, image: np.ndarray | str | Path) -> np.ndarray:
-        """Extract bright, low-saturation icon strokes and reject coloured glow."""
+    def _candidate_shape(
+        cls,
+        image: np.ndarray | str | Path,
+        *,
+        filter_saturation: bool = True,
+    ) -> np.ndarray:
+        """Extract bright icon strokes, optionally suppressing saturated glow."""
         grayscale = cls._to_grayscale(image)
 
         if isinstance(image, (str, Path)):
@@ -163,7 +168,10 @@ class ImageMatcher:
         )
         contrast_threshold = minimum + (maximum - minimum) * 0.45
         threshold = max(float(otsu_threshold), float(contrast_threshold))
-        foreground = ((grayscale > threshold) & low_saturation).astype(np.uint8) * 255
+        foreground_mask = grayscale > threshold
+        if filter_saturation:
+            foreground_mask &= low_saturation
+        foreground = foreground_mask.astype(np.uint8) * 255
 
         # If colour filtering leaves too little signal, fall back to the
         # grayscale foreground rather than silently returning an empty shape.
@@ -242,7 +250,13 @@ class ImageMatcher:
             raise ValueError("category must be 'tower', 'unit', or None")
 
         candidate = self._to_grayscale(image) if method == "grayscale" else None
-        candidate_shape = self._candidate_shape(image) if method == "shape" else None
+        candidate_shapes = (
+            (
+                self._candidate_shape(image, filter_saturation=True),
+                self._candidate_shape(image, filter_saturation=False),
+            )
+            if method == "shape" else ()
+        )
         results: list[MatchResult] = []
 
         for template in self._templates:
@@ -250,7 +264,13 @@ class ImageMatcher:
                 continue
 
             if method == "shape":
-                score = self._shape_similarity(candidate_shape, template.shape)
+                # Icon strokes can themselves be coloured. Evaluate both the
+                # glow-suppressed and luminance-only masks, then retain the
+                # stronger geometric match instead of discarding valid strokes.
+                score = max(
+                    self._shape_similarity(candidate_shape, template.shape)
+                    for candidate_shape in candidate_shapes
+                )
             else:
                 height, width = template.grayscale.shape
                 interpolation = (
