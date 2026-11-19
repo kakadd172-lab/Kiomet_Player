@@ -8,6 +8,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
+
+import requests
 from time import perf_counter
 from pathlib import Path
 from typing import Any, Iterable
@@ -175,7 +178,7 @@ def run_replay(
     return report
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, required=True, help="Screenshot file or directory")
     parser.add_argument("--output", type=Path, required=True, help="JSON replay output")
@@ -198,21 +201,26 @@ def main() -> None:
         min_detector_confidence=args.min_detector_confidence,
     )
     pipeline = TrackedEntityPipeline(detector=detector)
-    report = run_replay(
-        args.source,
-        args.output,
-        pipeline=pipeline,
-        annotated_dir=args.annotated_dir,
-        method=args.method,
-        min_score=args.min_score,
-        min_margin=args.min_margin,
-    )
+    try:
+        report = run_replay(
+            args.source,
+            args.output,
+            pipeline=pipeline,
+            annotated_dir=args.annotated_dir,
+            method=args.method,
+            min_score=args.min_score,
+            min_margin=args.min_margin,
+        )
+    except (RuntimeError, ValueError, OSError, requests.exceptions.RequestException) as error:
+        print(f"[Replay failed] {error}", file=sys.stderr)
+        return 1
     print(json.dumps({
         "frames_processed": report["frames_processed"],
         "output": str(args.output),
         "annotated_dir": str(args.annotated_dir) if args.annotated_dir else None,
     }, indent=2))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
