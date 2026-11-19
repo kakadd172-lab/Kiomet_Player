@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import argparse
 import json
+
+import cv2
+import numpy as np
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -94,6 +97,7 @@ def run_benchmark(
     min_score: float = 0.65,
     min_margin: float = 0.10,
     method: str = "grayscale",
+    debug_shapes_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Run the labelled-crop benchmark and save a machine-readable report."""
     if not isinstance(top_k, int) or isinstance(top_k, bool) or top_k < 1:
@@ -136,6 +140,34 @@ def run_benchmark(
             top_k=len(category_records),
             method=method,
         )
+        if debug_shapes_dir is not None and method == "shape":
+            filtered = matcher._candidate_shape(image_path, filter_saturation=True)
+            luminance = matcher._candidate_shape(image_path, filter_saturation=False)
+            expected_template = next(
+                item.shape for item in matcher._templates
+                if item.record.id == expected.id
+            )
+            top_template = next(
+                item.shape for item in matcher._templates
+                if all_ranked and item.record.id == all_ranked[0].record.id
+            ) if all_ranked else np.zeros_like(filtered)
+            # A labelled 2x2 diagnostic makes extraction errors visible:
+            # filtered candidate, luminance candidate, expected template,
+            # and the current top-ranked template.
+            tile_size = (192, 192)
+            tiles = [
+                cv2.resize(mask, tile_size, interpolation=cv2.INTER_NEAREST)
+                for mask in (filtered, luminance, expected_template, top_template)
+            ]
+            montage = np.vstack((
+                np.hstack((tiles[0], tiles[1])),
+                np.hstack((tiles[2], tiles[3])),
+            ))
+            debug_shapes_dir.mkdir(parents=True, exist_ok=True)
+            debug_path = debug_shapes_dir / f"{name}_shape_debug.png"
+            if not cv2.imwrite(str(debug_path), montage):
+                raise OSError(f"Could not write shape diagnostic: {debug_path}")
+
         displayed = all_ranked[:top_k]
         assessment = assess_matches(
             all_ranked, min_score=min_score, min_margin=min_margin
@@ -262,6 +294,7 @@ def main() -> None:
     )
     parser.add_argument("--min-score", type=float, default=0.65)
     parser.add_argument("--min-margin", type=float, default=0.10)
+    parser.add_argument("--debug-shapes-dir", type=Path, default=None, help="Write candidate/template shape diagnostic montages.")
     args = parser.parse_args()
 
     if args.top_k < 1:
@@ -280,6 +313,7 @@ def main() -> None:
         args.min_score,
         args.min_margin,
         args.method,
+        args.debug_shapes_dir,
     )
 
 
