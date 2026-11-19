@@ -38,7 +38,7 @@ The screenshot-region recognizer does **not** detect objects by itself: it requi
 | Path | Purpose |
 | --- | --- |
 | `browser_test.py` | Opens Kiomet in Chromium and captures an initial screenshot. |
-| `perception/` | Screenshot observation, screen classification, region-based entity recognition, vision experiments, and game-state extraction. |
+| `perception/` | Screenshot observation, screen classification, region-based entity recognition, vision experiments, temporal entity tracking, and game-state extraction. |
 | `kiomet_knowledge/assets/towers/official_svg/` | Kiomet tower SVG reference assets. |
 | `kiomet_knowledge/assets/troops/official_svg/` | Kiomet unit SVG reference assets. |
 | `kiomet_knowledge/assets/derived/` | Rendered PNG references and contact sheets derived from the SVG assets. |
@@ -157,6 +157,27 @@ python -m perception.run_entity_detection
 ```
 
 Pass `--image path/to/screenshot.png` to select a screenshot, `--model qwen3-vl:4b-instruct` to select the Ollama model, `--tiled` to test higher-detail regional proposals, `--max-image-side 1280` to change the full-frame resize limit, or `--method grayscale` to change the icon-matching method. The default model is `qwen3-vl:4b-instruct`; it must already be available in Ollama. Green boxes indicate accepted icon identities and amber boxes indicate uncertain matches. This is an experimental proposal pipeline: the vision model can miss objects or propose false boxes, and deterministic matching cannot correct a badly placed crop. Validate detections against manually labelled full screenshots before relying on them.
+
+### Track entities across successive screenshots
+
+The temporal tracking adapter connects the detector's verified regions to stable IDs. It uses spatial overlap and center distance to associate observations, keeps temporarily missing entities for a small configurable number of frames, and does not invent an identity when icon recognition is uncertain. Only accepted recognitions populate the track's identity. Feed screenshots in chronological order, once per observation frame:
+
+```python
+from perception.tracked_entity_pipeline import TrackedEntityPipeline
+
+pipeline = TrackedEntityPipeline()
+for screenshot_path in screenshot_paths:
+    tracks = pipeline.process(screenshot_path, method="shape")
+    for entity in pipeline.snapshot(include_missing=False):
+        print(
+            entity.track_id,
+            entity.category,
+            entity.identity or "unidentified",
+            entity.bbox,
+        )
+```
+
+The default tracker retains a track for up to two missed frames before expiring it. This is a short-term association layer, not a full game-state history or a guarantee that a track represents the same real game object indefinitely. Validate it with labelled multi-frame sequences before using its IDs for decisions.
 
 ### Run the labelled icon-matcher benchmark
 
