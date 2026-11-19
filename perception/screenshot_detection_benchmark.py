@@ -104,7 +104,7 @@ def box_iou(first: tuple[float, float, float, float], second: tuple[float, float
     right, bottom = min(ax + aw, bx + bw), min(ay + ah, by + bh)
     intersection = max(0.0, right - left) * max(0.0, bottom - top)
     union = aw * ah + bw * bh - intersection
-    return intersection / union if union > 0 else 0.0
+    return min(1.0, max(0.0, intersection / union)) if union > 0 else 0.0
 
 
 def match_entities(
