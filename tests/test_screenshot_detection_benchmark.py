@@ -76,7 +76,10 @@ class ScreenshotDetectionBenchmarkTests(unittest.TestCase):
     def test_category_metrics_are_reported_independently(self):
         expected = [
             self.entity("tower-1", category="tower"),
-            self.entity("unit-1", category="unit"),
+            self.entity(
+                "unit-1", category="unit",
+                bbox={"x": 0.5, "y": 0.5, "width": 0.1, "height": 0.1},
+            ),
         ]
         predicted = [
             {
