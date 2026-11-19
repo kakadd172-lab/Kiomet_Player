@@ -410,7 +410,8 @@ class VisionEntityDetector:
             nonlocal adaptive_split_count
             try:
                 result = self._request_tile(tile)
-                self.inference_metrics[-1]["tile_name"] = tile_name
+                if self.inference_metrics:
+                    self.inference_metrics[-1]["tile_name"] = tile_name
             except ValueError as error:
                 is_truncated = "truncated at Ollama's output-token limit" in str(error)
                 can_split = (
