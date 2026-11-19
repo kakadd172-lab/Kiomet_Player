@@ -134,8 +134,12 @@ class VisionEntityDetector:
             raise ValueError("timeout must be positive")
         if not isinstance(upscale, (int, float)) or isinstance(upscale, bool) or upscale < 0.25:
             raise ValueError("upscale must be at least 0.25")
-        if not isinstance(max_image_side, int) or isinstance(max_image_side, bool) or max_image_side < 256:
-            raise ValueError("max_image_side must be an integer of at least 256")
+        if max_image_side is not None and (
+            not isinstance(max_image_side, int)
+            or isinstance(max_image_side, bool)
+            or max_image_side < 256
+        ):
+            raise ValueError("max_image_side must be None (native resolution) or an integer of at least 256")
         if not isinstance(tiled, bool):
             raise ValueError("tiled must be a boolean")
         if not isinstance(num_threads, int) or isinstance(num_threads, bool) or num_threads < 1:
@@ -192,7 +196,9 @@ class VisionEntityDetector:
         )
 
     def _request_tile(self, tile: Image.Image) -> dict[str, Any]:
-        scale = min(self.upscale, self.max_image_side / max(tile.width, tile.height))
+        scale = self.upscale
+        if self.max_image_side is not None:
+            scale = min(scale, self.max_image_side / max(tile.width, tile.height))
         if scale != 1:
             tile = tile.resize(
                 (max(1, round(tile.width * scale)), max(1, round(tile.height * scale))),
