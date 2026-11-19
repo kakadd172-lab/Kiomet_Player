@@ -117,15 +117,24 @@ class ScreenEntityRecognizer:
 
         for proposal in proposals:
             x, y, box_width, box_height = _validated_box(proposal)
-            left = int(round(x * width))
-            top = int(round(y * height))
-            right = int(round((x + box_width) * width))
-            bottom = int(round((y + box_height) * height))
-            right = min(width, max(left + 1, right))
-            bottom = min(height, max(top + 1, bottom))
-            if left >= width or top >= height or right <= left or bottom <= top:
+            box_left = int(round(x * width))
+            box_top = int(round(y * height))
+            box_right = min(width, max(box_left + 1, int(round((x + box_width) * width))))
+            box_bottom = min(height, max(box_top + 1, int(round((y + box_height) * height))))
+            if box_left >= width or box_top >= height or box_right <= box_left or box_bottom <= box_top:
                 raise ValueError(f"Region {proposal.region_id!r} produces an empty crop")
 
+            # VLM boxes often hug the bright glyph too tightly. Include a
+            # modest context border so antialiasing, glows and detached icon
+            # details are not clipped; the matcher still extracts foreground.
+            box_width_px = box_right - box_left
+            box_height_px = box_bottom - box_top
+            pad_x = max(2, int(round(box_width_px * 0.25)))
+            pad_y = max(2, int(round(box_height_px * 0.25)))
+            left = max(0, box_left - pad_x)
+            top = max(0, box_top - pad_y)
+            right = min(width, box_right + pad_x)
+            bottom = min(height, box_bottom + pad_y)
             crop = frame[top:bottom, left:right]
             recognizer = self.tower_recognizer if proposal.category == "tower" else self.troop_recognizer
             result = recognizer.recognize(
