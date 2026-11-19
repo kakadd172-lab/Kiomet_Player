@@ -168,6 +168,18 @@ python perception/icon_matcher_benchmark.py
 
 Useful options include `--top-k 5`, `--method grayscale` or experimental `--method shape`, `--min-score 0.65`, `--min-margin 0.10`, `--labels path/to/labels.json`, and `--output path/to/report.json`. The grayscale method is the original pixel-comparison baseline. Shape mode compares several foreground extractions and a dominant-connected-component silhouette. The latter can discard detached count markers beneath an icon before comparing normalized binary shapes. This reduces interference from coloured team markers, glow, and detached UI marks, but remains experimental and must be evaluated against a broader labelled screenshot set before being trusted. The score thresholds are provisional heuristics, not probabilities. The current dataset is deliberately small; do not treat its accuracy as a reliable estimate of in-game performance. The clipped King crop remains disabled until it is recaptured.
 
+### Benchmark full gameplay screenshots against ground truth
+
+A separate full-screen benchmark evaluates the **proposal detector and recognizer together** against manually labelled gameplay screenshots. Unlike the crop benchmark, it measures missed entities, extra proposals, bounding-box overlap (IoU), and identity accuracy where an expected name is labelled. Every screenshot must be exhaustively annotated before it can be scored; partial annotations are rejected so false-positive counts are not misleading.
+
+See [`benchmark_screenshots/README.md`](benchmark_screenshots/README.md) for the label format and capture guidance. Add real screenshots and manually reviewed boxes to that directory, then run:
+
+```powershell
+.\.venv\Scripts\python.exe -m perception.screenshot_detection_benchmark --labels benchmark_screenshots/labels.json --max-image-side 960
+```
+
+Compare `--max-image-side 960`, `1280`, and `--tiled` while keeping the model, labels, and thresholds fixed. The benchmark deliberately does not change production defaults or calibrate thresholds automatically. A useful report depends on varied, fully labelled screenshots; no accuracy claim is made until that dataset exists.
+
 Run the automated tests with:
 
 ```bash
