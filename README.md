@@ -150,13 +150,13 @@ A proposal category must be `tower` or `unit`. Each result includes normalized a
 
 ### Run experimental full-screen entity detection
 
-The tiled detector asks the configured local vision model to propose tower/unit bounding boxes in overlapping screenshot regions. Each proposal is then checked by the deterministic icon recognizers. It saves a JSON report and an annotated screenshot under the ignored `benchmark_results/entity_detection/` directory:
+The entity detector asks the configured local vision model to propose tower/unit bounding boxes. By default it makes one resized full-screen request; pass `--tiled` to use up to four overlapping regions, which preserves more detail per request at the cost of additional inference calls. Each proposal is checked by the deterministic icon recognizers. The JSON report includes client wall-clock time, Ollama's reported total/load/prompt-evaluation/generation durations, token counts, source dimensions, and recognition-pipeline timings when the installed Ollama version returns those metrics. An annotated screenshot is also saved under the ignored `benchmark_results/entity_detection/` directory:
 
 ```bash
 python -m perception.run_entity_detection
 ```
 
-Pass `--image path/to/screenshot.png` to select a screenshot, `--model qwen3-vl:4b-instruct` to select the Ollama model, or `--method grayscale` to change the icon-matching method. The default model is `qwen3-vl:4b-instruct`; it must already be available in Ollama. Green boxes indicate accepted icon identities and amber boxes indicate uncertain matches. This is an experimental proposal pipeline: the vision model can miss objects or propose false boxes, and deterministic matching cannot correct a badly placed crop. Validate detections against manually labelled full screenshots before relying on them.
+Pass `--image path/to/screenshot.png` to select a screenshot, `--model qwen3-vl:4b-instruct` to select the Ollama model, `--tiled` to test higher-detail regional proposals, `--max-image-side 1280` to change the full-frame resize limit, or `--method grayscale` to change the icon-matching method. The default model is `qwen3-vl:4b-instruct`; it must already be available in Ollama. Green boxes indicate accepted icon identities and amber boxes indicate uncertain matches. This is an experimental proposal pipeline: the vision model can miss objects or propose false boxes, and deterministic matching cannot correct a badly placed crop. Validate detections against manually labelled full screenshots before relying on them.
 
 ### Run the labelled icon-matcher benchmark
 
