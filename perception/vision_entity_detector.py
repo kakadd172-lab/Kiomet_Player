@@ -344,20 +344,55 @@ class VisionEntityDetector:
         image = _load_rgb(screenshot)
         width, height = image.size
         proposals: list[VisionProposal] = []
+        adaptive_split_count = 0
+        max_adaptive_split_depth = 2
 
         tiles = (
             [("full", 0, 0, width, height)]
             if not self.tiled
             else _tile_bounds(width, height, self.overlap)
         )
-        for tile_name, left, top, right, bottom in tiles:
-            tile = image.crop((left, top, right, bottom))
-            # A failed or truncated tile must fail the frame. Silently
-            # skipping it would make an incomplete detector result look valid.
-            result = self._request_tile(tile)
-            tile_width = right - left
-            tile_height = bottom - top
 
+        def collect_tile(
+            tile: Image.Image,
+            tile_name: str,
+            origin_x: int,
+            origin_y: int,
+            depth: int = 0,
+        ) -> None:
+            nonlocal adaptive_split_count
+            try:
+                result = self._request_tile(tile)
+            except ValueError as error:
+                is_truncated = "truncated at Ollama's output-token limit" in str(error)
+                can_split = (
+                    is_truncated
+                    and depth < max_adaptive_split_depth
+                    and tile.width >= 128
+                    and tile.height >= 128
+                )
+                if not can_split:
+                    raise
+
+                # Discard the incomplete parent response and retry its image as
+                # smaller overlapping crops. Every child must succeed; otherwise
+                # the frame still fails rather than returning partial detections.
+                child_bounds = _tile_bounds(tile.width, tile.height, self.overlap)
+                if len(child_bounds) <= 1:
+                    raise
+                adaptive_split_count += 1
+                for child_name, left, top, right, bottom in child_bounds:
+                    child = tile.crop((left, top, right, bottom))
+                    collect_tile(
+                        child,
+                        f"{tile_name}/{child_name}",
+                        origin_x + left,
+                        origin_y + top,
+                        depth + 1,
+                    )
+                return
+
+            tile_width, tile_height = tile.size
             for index, item in enumerate(result["entities"]):
                 if not isinstance(item, dict) or item.get("category") not in {"tower", "unit"}:
                     continue
@@ -383,8 +418,8 @@ class VisionEntityDetector:
                 if local_x < 0 or local_y < 0 or local_x + local_width > 1 or local_y + local_height > 1:
                     continue
 
-                abs_x = (left + local_x * tile_width) / width
-                abs_y = (top + local_y * tile_height) / height
+                abs_x = (origin_x + local_x * tile_width) / width
+                abs_y = (origin_y + local_y * tile_height) / height
                 abs_width = local_width * tile_width / width
                 abs_height = local_height * tile_height / height
                 proposal = RegionProposal(
@@ -396,6 +431,9 @@ class VisionEntityDetector:
                     height=abs_height,
                 )
                 proposals.append(VisionProposal(proposal, confidence, tile_name))
+
+        for tile_name, left, top, right, bottom in tiles:
+            collect_tile(image.crop((left, top, right, bottom)), tile_name, left, top)
 
         # Overlapping tiles see some entities twice. Keep the higher-confidence
         # box when same-category proposals substantially overlap.
@@ -420,11 +458,13 @@ class VisionEntityDetector:
                 "min_detector_confidence": self.min_detector_confidence,
                 "duplicate_iou": self.duplicate_iou,
                 "timeout_seconds": self.timeout,
+                "max_adaptive_split_depth": max_adaptive_split_depth,
             },
             "source_width": width,
             "source_height": height,
             "tile_count": len(tiles),
             "successful_inference_count": len(self.inference_metrics),
+            "adaptive_split_count": adaptive_split_count,
             "proposal_duration_ms": round((perf_counter() - pipeline_started) * 1000.0, 3),
             "timings": {
                 field: _timing_summary(self.inference_metrics, field)
