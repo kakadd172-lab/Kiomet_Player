@@ -6,6 +6,7 @@ from pathlib import Path
 from perception.screenshot_detection_benchmark import (
     box_iou,
     load_labels,
+    _category_metrics,
     match_entities,
 )
 
@@ -71,6 +72,38 @@ class ScreenshotDetectionBenchmarkTests(unittest.TestCase):
             {match["expected_id"]: match["predicted_id"] for match in result["matches"]},
             {"A": "p2", "B": "p1"},
         )
+
+    def test_category_metrics_are_reported_independently(self):
+        expected = [
+            self.entity("tower-1", category="tower"),
+            self.entity("unit-1", category="unit"),
+        ]
+        predicted = [
+            {
+                "id": "p1", "category": "tower",
+                "bbox": {"x": 0.1, "y": 0.1, "width": 0.2, "height": 0.2},
+                "recognized_name": "Radar",
+            },
+            {
+                "id": "p2", "category": "unit",
+                "bbox": {"x": 0.5, "y": 0.5, "width": 0.1, "height": 0.1},
+                "recognized_name": "King",
+            },
+            {
+                "id": "p3", "category": "unit",
+                "bbox": {"x": 0.8, "y": 0.8, "width": 0.1, "height": 0.1},
+                "recognized_name": "King",
+            },
+        ]
+        metrics = _category_metrics(expected, predicted, 0.5)
+        self.assertEqual(metrics["tower"]["true_positives"], 1)
+        self.assertEqual(metrics["tower"]["false_positives"], 0)
+        self.assertEqual(metrics["tower"]["false_negatives"], 0)
+        self.assertEqual(metrics["unit"]["true_positives"], 1)
+        self.assertEqual(metrics["unit"]["false_positives"], 1)
+        self.assertEqual(metrics["unit"]["false_negatives"], 0)
+        self.assertEqual(metrics["unit"]["precision"], 0.5)
+        self.assertEqual(metrics["unit"]["recall"], 1.0)
 
     def test_category_mismatch_is_false_positive_and_false_negative(self):
         result = match_entities(
