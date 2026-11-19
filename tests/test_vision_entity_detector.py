@@ -125,6 +125,25 @@ class VisionEntityDetectorTests(unittest.TestCase):
             with patch("perception.vision_entity_detector.requests.post", return_value=response):
                 self.assertEqual(detector._request_tile(Image.new("RGB", (320, 200))), {"entities": []})
 
+    def test_timing_summary_reports_total_mean_min_and_max(self):
+        metrics = [
+            {"request_wall_ms": 10.0, "ollama_total_ms": 8.0},
+            {"request_wall_ms": 20.0, "ollama_total_ms": None},
+            {"request_wall_ms": 30.0, "ollama_total_ms": 12.0},
+        ]
+        self.assertEqual(
+            _timing_summary(metrics, "request_wall_ms"),
+            {"count": 3, "total_ms": 60.0, "mean_ms": 20.0, "min_ms": 10.0, "max_ms": 30.0},
+        )
+        self.assertEqual(
+            _timing_summary(metrics, "ollama_total_ms"),
+            {"count": 2, "total_ms": 20.0, "mean_ms": 10.0, "min_ms": 8.0, "max_ms": 12.0},
+        )
+        self.assertEqual(
+            _timing_summary(metrics, "missing"),
+            {"count": 0, "total_ms": None, "mean_ms": None, "min_ms": None, "max_ms": None},
+        )
+
     def test_request_records_ollama_timing_metrics(self):
         from PIL import Image
         detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
