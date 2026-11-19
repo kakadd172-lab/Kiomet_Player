@@ -119,7 +119,7 @@ class VisionEntityDetector:
         timeout: float = 180.0,
         overlap: float = 0.12,
         upscale: float = 1.0,
-        max_image_side: int = 960,
+        max_image_side: int | None = 960,
         tiled: bool = False,
         num_threads: int = 8,
         min_detector_confidence: float = 0.35,
@@ -196,21 +196,23 @@ class VisionEntityDetector:
         )
 
     def _request_tile(self, tile: Image.Image) -> dict[str, Any]:
+        source_width, source_height = tile.size
         # Native mode preserves the exact source pixels: no downscaling
         # and no optional upscaling.
         scale = 1.0 if self.max_image_side is None else min(
             self.upscale,
-            self.max_image_side / max(tile.width, tile.height),
+            self.max_image_side / max(source_width, source_height),
         )
         if scale != 1:
             tile = tile.resize(
-                (max(1, round(tile.width * scale)), max(1, round(tile.height * scale))),
+                (max(1, round(source_width * scale)), max(1, round(source_height * scale))),
                 Image.Resampling.LANCZOS,
             )
         preprocessing_started = perf_counter()
         buffer = BytesIO()
         tile.save(buffer, format="PNG")
-        encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+        png_bytes = buffer.getvalue()
+        encoded = base64.b64encode(png_bytes).decode("ascii")
         preprocessing_ms = (perf_counter() - preprocessing_started) * 1000.0
         request_started = perf_counter()
         response = requests.post(
@@ -283,8 +285,14 @@ class VisionEntityDetector:
 
         self.inference_metrics.append({
             "tile": f"{tile.width}x{tile.height}",
+            "source_width": source_width,
+            "source_height": source_height,
             "input_width": tile.width,
             "input_height": tile.height,
+            "resize_scale": round(scale, 6),
+            "resized": tile.size != (source_width, source_height),
+            "png_bytes": len(png_bytes),
+            "base64_chars": len(encoded),
             "preprocessing_ms": round(preprocessing_ms, 3),
             "request_wall_ms": round((perf_counter() - request_started) * 1000.0, 3),
             "ollama_total_ms": duration_ms("total_duration"),
