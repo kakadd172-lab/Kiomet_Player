@@ -111,12 +111,16 @@ def run_replay(
         )
         all_tracks = active_pipeline.snapshot(include_missing=True)
         visible_tracks = [track for track in current if track.missed_frames == 0]
+        visible_records = [_track_record(track) for track in visible_tracks]
         frames.append({
             "frame_index": frame_index,
             "source": screenshot.name,
             "source_path": str(screenshot),
             "source_sha256": _sha256(screenshot),
-            "tracks": [_track_record(track) for track in visible_tracks],
+            # "predicted" matches the tracking benchmark input schema; add a
+            # manually reviewed "expected" list to evaluate this replay.
+            "predicted": visible_records,
+            "tracks": visible_records,
             "temporarily_missing_tracks": [
                 _track_record(track) for track in all_tracks if track.missed_frames > 0
             ],
