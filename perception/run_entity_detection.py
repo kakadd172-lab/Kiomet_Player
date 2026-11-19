@@ -174,6 +174,7 @@ def main() -> int:
     for index, metric in enumerate(detector.inference_metrics, start=1):
         print(
             f"- Request {index} ({metric['tile']}): "
+            f"preprocess={metric['preprocessing_ms']:.1f} ms, "
             f"wall={metric['request_wall_ms']:.1f} ms, "
             f"Ollama total={metric['ollama_total_ms']} ms, "
             f"load={metric['ollama_load_ms']} ms, "
