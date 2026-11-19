@@ -115,25 +115,51 @@ def match_entities(
     """Greedy one-to-one matching, highest IoU first, requiring category match."""
     if not 0 < iou_threshold <= 1:
         raise ValueError("iou_threshold must be greater than 0 and at most 1")
-    pairs = []
+    # Use augmenting paths rather than a single greedy pass. A locally best
+    # IoU edge can otherwise block a second valid match and inflate false
+    # negatives even though a complete one-to-one assignment exists.
+    adjacency: list[list[tuple[float, int]]] = []
     for expected_index, truth in enumerate(expected):
         truth_box = _valid_box(truth["bbox"], f"expected[{expected_index}].bbox")
+        edges = []
         for predicted_index, candidate in enumerate(predicted):
             if truth["category"] != candidate["category"]:
                 continue
             candidate_box = _valid_box(candidate["bbox"], f"predicted[{predicted_index}].bbox")
             overlap = box_iou(truth_box, candidate_box)
             if overlap >= iou_threshold:
-                pairs.append((overlap, expected_index, predicted_index))
-    pairs.sort(reverse=True)
-    used_expected: set[int] = set()
-    used_predicted: set[int] = set()
+                edges.append((overlap, predicted_index))
+        edges.sort(key=lambda pair: (-pair[0], pair[1]))
+        adjacency.append(edges)
+
+    # Process the most constrained labels first. Reassignment guarantees
+    # maximum match count while preferring higher-IoU edges.
+    expected_order = sorted(range(len(expected)), key=lambda index: (len(adjacency[index]), index))
+    predicted_owner: dict[int, int] = {}
+    chosen_iou: dict[tuple[int, int], float] = {}
+
+    def assign(expected_index: int, visited: set[int]) -> bool:
+        for overlap, predicted_index in adjacency[expected_index]:
+            if predicted_index in visited:
+                continue
+            visited.add(predicted_index)
+            previous_owner = predicted_owner.get(predicted_index)
+            if previous_owner is None or assign(previous_owner, visited):
+                predicted_owner[predicted_index] = expected_index
+                chosen_iou[(expected_index, predicted_index)] = overlap
+                if previous_owner is not None:
+                    chosen_iou.pop((previous_owner, predicted_index), None)
+                return True
+        return False
+
+    for expected_index in expected_order:
+        assign(expected_index, set())
+
     matches = []
-    for overlap, expected_index, predicted_index in pairs:
-        if expected_index in used_expected or predicted_index in used_predicted:
-            continue
-        used_expected.add(expected_index)
-        used_predicted.add(predicted_index)
+    used_expected = set(predicted_owner.values())
+    used_predicted = set(predicted_owner)
+    for predicted_index, expected_index in sorted(predicted_owner.items(), key=lambda pair: pair[1]):
+        overlap = chosen_iou[(expected_index, predicted_index)]
         truth = expected[expected_index]
         guess = predicted[predicted_index]
         expected_name = truth.get("expected_name")
