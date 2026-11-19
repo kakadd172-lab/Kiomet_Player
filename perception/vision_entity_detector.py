@@ -568,7 +568,7 @@ class VisionEntityDetector:
             self.pipeline_metrics["proposal_duration_ms"]
             + self.pipeline_metrics["recognition_duration_ms"], 3
         )
-        return [
+        verified = [
             VerifiedEntity(
                 proposal=item.proposal,
                 detector_confidence=item.detector_confidence,
@@ -577,3 +577,33 @@ class VisionEntityDetector:
             )
             for item, observation in zip(proposals, observations)
         ]
+
+        # The VLM sometimes emits the exact same rectangle as both a tower
+        # and a unit. Resolve near-identical cross-category boxes only after
+        # recognition, so category-specific visual evidence decides the winner.
+        ranked = sorted(
+            verified,
+            key=lambda item: (
+                bool(item.recognition.accepted),
+                float(item.recognition.top_score),
+                float(item.recognition.margin) if item.recognition.margin is not None else -1.0,
+                item.detector_confidence,
+            ),
+            reverse=True,
+        )
+        deduplicated: list[VerifiedEntity] = []
+        removed_cross_category = 0
+        for candidate in ranked:
+            duplicate = any(
+                candidate.proposal.category != kept.proposal.category
+                and _iou(candidate.proposal, kept.proposal) >= 0.90
+                for kept in deduplicated
+            )
+            if duplicate:
+                removed_cross_category += 1
+                continue
+            deduplicated.append(candidate)
+
+        self.pipeline_metrics["cross_category_duplicates_removed"] = removed_cross_category
+        self.pipeline_metrics["verified_entity_count"] = len(deduplicated)
+        return deduplicated
