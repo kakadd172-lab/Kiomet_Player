@@ -94,6 +94,22 @@ class TrackingBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "strictly increasing"):
             evaluate_tracking_frames(frames)
 
+    def test_rejects_duplicate_predicted_track_id_in_one_frame(self):
+        frames = [{
+            "expected": [],
+            "predicted": [entity("p1", track_id="T1"), entity("p2", 0.5, track_id="T1")],
+        }]
+        with self.assertRaisesRegex(ValueError, "unique within each frame"):
+            evaluate_tracking_frames(frames)
+
+    def test_rejects_out_of_bounds_normalized_box(self):
+        frames = [{
+            "expected": [entity("A", 0.95)],
+            "predicted": [],
+        }]
+        with self.assertRaisesRegex(ValueError, "normalized frame bounds"):
+            evaluate_tracking_frames(frames)
+
     def test_rejects_invalid_iou_threshold(self):
         with self.assertRaises(ValueError):
             evaluate_tracking_frames([{"expected": [], "predicted": []}], iou_threshold=0)
