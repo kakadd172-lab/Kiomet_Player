@@ -120,7 +120,7 @@ class VisionEntityDetector:
         upscale: float = 1.0,
         max_image_side: int = 960,
         tiled: bool = False,
-        num_threads: int = 4,
+        num_threads: int = 8,
         min_detector_confidence: float = 0.35,
         duplicate_iou: float = 0.45,
         screen_recognizer: ScreenEntityRecognizer | None = None,
@@ -175,7 +175,7 @@ class VisionEntityDetector:
             "Return JSON only, with an 'entities' array. Each item must contain category, "
             "bbox with numeric x/y/width/height, and a numeric confidence from 0 to 1. "
             "If no clear symbols are visible, return an empty entities array. "
-            "Do not copy example coordinates or use a fixed confidence for every detection."
+            "Keep the JSON compact: no markdown, explanations, or extra keys. Do not copy example coordinates or use a fixed confidence for every detection."
         )
 
     def _request_tile(self, tile: Image.Image) -> dict[str, Any]:
@@ -227,7 +227,7 @@ class VisionEntityDetector:
                 },
                 "stream": False,
                 "keep_alive": "5m",
-                "options": {"temperature": 0.1, "num_predict": 700, "num_thread": self.num_threads},
+                "options": {"temperature": 0.1, "num_predict": 1200, "num_thread": self.num_threads},
             },
             timeout=self.timeout,
         )
@@ -239,9 +239,13 @@ class VisionEntityDetector:
         try:
             parsed = json.loads(content)
         except json.JSONDecodeError as error:
+            lines = content.splitlines()
+            nearby = lines[error.lineno - 1] if 0 < error.lineno <= len(lines) else content[:180]
+            nearby = nearby.strip()[:180]
+            done_reason = payload.get("done_reason", "not reported")
             raise ValueError(
-                f"Vision model returned malformed JSON ({error.msg} at line {error.lineno}, column {error.colno}); "
-                "try a smaller image or a model with reliable structured-output support"
+                f"Vision model returned malformed JSON ({error.msg} at line {error.lineno}, "
+                f"column {error.colno}; done_reason={done_reason}; nearby={nearby!r})"
             ) from error
         if not isinstance(parsed, dict) or not isinstance(parsed.get("entities"), list):
             raise ValueError("Vision model JSON must contain an entities array")
