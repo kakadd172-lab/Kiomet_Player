@@ -12,7 +12,18 @@ from typing import Any
 
 
 def _box(value: dict[str, Any]) -> tuple[float, float, float, float]:
-    return tuple(float(value[key]) for key in ("x", "y", "width", "height"))
+    if not isinstance(value, dict):
+        raise ValueError("bbox must be an object")
+    try:
+        values = tuple(float(value[key]) for key in ("x", "y", "width", "height"))
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("bbox must contain numeric x, y, width, and height") from error
+    x, y, width, height = values
+    if not all(value == value and abs(value) != float("inf") for value in values):
+        raise ValueError("bbox values must be finite")
+    if x < 0 or y < 0 or width <= 0 or height <= 0 or x + width > 1 or y + height > 1:
+        raise ValueError("bbox must have positive size and fit inside normalized frame bounds")
+    return values
 
 
 def _iou(first: tuple[float, float, float, float], second: tuple[float, float, float, float]) -> float:
@@ -99,15 +110,23 @@ def evaluate_tracking_frames(
         predicted = frame.get("predicted")
         if not isinstance(expected, list) or not isinstance(predicted, list):
             raise ValueError("each frame must contain expected and predicted lists")
+        expected_ids: set[str] = set()
         for item in expected:
-            if not isinstance(item.get("id"), str) or not item["id"]:
+            if not isinstance(item, dict) or not isinstance(item.get("id"), str) or not item["id"]:
                 raise ValueError("each expected entity requires a stable non-empty id")
+            if item["id"] in expected_ids:
+                raise ValueError("ground-truth IDs must be unique within each frame")
+            expected_ids.add(item["id"])
             if item.get("category") not in {"tower", "unit"}:
                 raise ValueError("expected category must be tower or unit")
             _box(item["bbox"])
+        predicted_ids: set[str] = set()
         for item in predicted:
-            if not isinstance(item.get("track_id"), str) or not item["track_id"]:
+            if not isinstance(item, dict) or not isinstance(item.get("track_id"), str) or not item["track_id"]:
                 raise ValueError("each prediction requires a non-empty track_id")
+            if item["track_id"] in predicted_ids:
+                raise ValueError("predicted track IDs must be unique within each frame")
+            predicted_ids.add(item["track_id"])
             if item.get("category") not in {"tower", "unit"}:
                 raise ValueError("predicted category must be tower or unit")
             _box(item["bbox"])
