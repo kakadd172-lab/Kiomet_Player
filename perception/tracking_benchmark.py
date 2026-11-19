@@ -34,19 +34,33 @@ def _match_frame(expected: list[dict[str, Any]], predicted: list[dict[str, Any]]
             overlap = _iou(_box(truth["bbox"]), _box(guess["bbox"]))
             if overlap >= threshold:
                 edges.append((overlap, ei, pi))
-    edges.sort(reverse=True)
-    used_expected: set[int] = set()
-    used_predicted: set[int] = set()
-    matches = []
-    # Greedy highest-IoU matching is deterministic; tracker IDs are scored only
-    # after spatial/category correspondence is established.
+    # Augmenting paths maximize the number of valid spatial matches; among
+    # alternatives, each expected entity tries its highest-IoU prediction first.
+    adjacency: dict[int, list[tuple[float, int]]] = {index: [] for index in range(len(expected))}
     for overlap, ei, pi in edges:
-        if ei in used_expected or pi in used_predicted:
-            continue
-        used_expected.add(ei)
-        used_predicted.add(pi)
-        matches.append((ei, pi, overlap))
-    return matches
+        adjacency[ei].append((overlap, pi))
+    for candidates in adjacency.values():
+        candidates.sort(key=lambda pair: (-pair[0], pair[1]))
+    owner: dict[int, int] = {}
+    chosen: dict[tuple[int, int], float] = {}
+
+    def assign(ei: int, visited: set[int]) -> bool:
+        for overlap, pi in adjacency[ei]:
+            if pi in visited:
+                continue
+            visited.add(pi)
+            previous = owner.get(pi)
+            if previous is None or assign(previous, visited):
+                owner[pi] = ei
+                chosen[(ei, pi)] = overlap
+                if previous is not None:
+                    chosen.pop((previous, pi), None)
+                return True
+        return False
+
+    for ei in sorted(adjacency, key=lambda index: (len(adjacency[index]), index)):
+        assign(ei, set())
+    return [(ei, pi, chosen[(ei, pi)]) for pi, ei in sorted(owner.items(), key=lambda item: item[1])]
 
 
 def evaluate_tracking_frames(
