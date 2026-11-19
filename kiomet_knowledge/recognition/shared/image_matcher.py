@@ -204,6 +204,27 @@ class ImageMatcher:
 
         return cls._normalize_shape(foreground)
 
+    @classmethod
+    def _dominant_component_shape(cls, shape: np.ndarray) -> np.ndarray:
+        """Keep the largest connected foreground component and normalize it.
+
+        Some game crops include detached troop-count glyphs below the tower
+        symbol. Those marks should not distort the tower's silhouette.
+        """
+        binary = (shape > 0).astype(np.uint8)
+        component_count, labels, stats, _ = cv2.connectedComponentsWithStats(
+            binary, connectivity=8
+        )
+        if component_count <= 1:
+            return cls._normalize_shape(binary * 255)
+
+        largest = max(
+            range(1, component_count),
+            key=lambda index: int(stats[index, cv2.CC_STAT_AREA]),
+        )
+        dominant = np.where(labels == largest, 255, 0).astype(np.uint8)
+        return cls._normalize_shape(dominant)
+
     @staticmethod
     def _shape_similarity(candidate: np.ndarray, template: np.ndarray) -> float:
         """Combine binary overlap with symmetric chamfer distance."""
@@ -262,6 +283,11 @@ class ImageMatcher:
                 self._candidate_shape(
                     image, filter_saturation=False, contrast_fraction=0.72
                 ),
+                # Detached count/stack markers below a tower can otherwise
+                # stretch the normalized silhouette away from the icon.
+                self._dominant_component_shape(
+                    self._candidate_shape(image, filter_saturation=True)
+                ),
             )
             if method == "shape" else ()
         )
@@ -272,9 +298,9 @@ class ImageMatcher:
                 continue
 
             if method == "shape":
-                # Compare conservative saturation filtering, ordinary
-                # luminance, and a high-brightness pass. The third mask is
-                # intended to isolate pale glyph strokes from darker markers.
+                # Compare three foreground extraction passes plus a
+                # dominant-component silhouette that excludes detached
+                # count/stack markers beneath the main tower icon.
                 score = max(
                     self._shape_similarity(candidate_shape, template.shape)
                     for candidate_shape in candidate_shapes
