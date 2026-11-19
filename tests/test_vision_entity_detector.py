@@ -103,6 +103,47 @@ class VisionEntityDetectorTests(unittest.TestCase):
             detector._request_tile(Image.new("RGB", (320, 200)))
         self.assertEqual(request.call_args.kwargs["json"]["options"]["num_thread"], 6)
 
+    def test_truncated_full_frame_retries_as_overlapping_subtiles(self):
+        detector = VisionEntityDetector(
+            screen_recognizer=self.screen_recognizer,
+            tiled=False,
+        )
+        entity = {
+            "category": "tower",
+            "bbox": {"x": 0.25, "y": 0.25, "width": 0.2, "height": 0.2},
+            "confidence": 0.9,
+        }
+        responses = [
+            ValueError("Vision model response was truncated at Ollama's output-token limit"),
+            {"entities": [entity]},
+            {"entities": []},
+            {"entities": []},
+            {"entities": []},
+        ]
+        with patch.object(detector, "_request_tile", side_effect=responses) as request:
+            proposals = detector.propose_regions(self.image)
+
+        self.assertEqual(request.call_count, 5)
+        self.assertEqual(len(proposals), 1)
+        self.assertAlmostEqual(proposals[0].proposal.x, 0.14)
+        self.assertAlmostEqual(proposals[0].proposal.y, 0.14)
+        self.assertAlmostEqual(proposals[0].proposal.width, 0.112)
+        self.assertEqual(detector.pipeline_metrics["adaptive_split_count"], 1)
+        self.assertEqual(detector.pipeline_metrics["successful_inference_count"], 4)
+
+    def test_adaptive_retry_still_fails_if_a_child_tile_truncates(self):
+        detector = VisionEntityDetector(
+            screen_recognizer=self.screen_recognizer,
+            tiled=False,
+        )
+        responses = [
+            ValueError("Vision model response was truncated at Ollama's output-token limit"),
+            ValueError("Vision model response was truncated at Ollama's output-token limit"),
+        ]
+        with patch.object(detector, "_request_tile", side_effect=responses):
+            with self.assertRaisesRegex(ValueError, "truncated.*output-token limit"):
+                detector.propose_regions(self.image)
+
     def test_truncated_ollama_response_is_rejected_before_json_parsing(self):
         from PIL import Image
         detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
