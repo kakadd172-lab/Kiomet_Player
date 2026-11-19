@@ -30,12 +30,12 @@ class VisionEntityDetectorTests(unittest.TestCase):
             tiled=True,
         )
 
-    def test_default_inference_settings_use_one_bounded_eight_thread_pass(self):
+    def test_default_inference_settings_leave_cpu_thread_selection_to_ollama(self):
         detector = VisionEntityDetector(screen_recognizer=self.screen_recognizer)
         self.assertFalse(detector.tiled)
         self.assertEqual(detector.max_image_side, 960)
         self.assertEqual(detector.upscale, 1.0)
-        self.assertEqual(detector.num_threads, 8)
+        self.assertIsNone(detector.num_threads)
 
     def test_native_resolution_is_supported(self):
         detector = VisionEntityDetector(
