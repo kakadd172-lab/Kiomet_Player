@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "purpose": "Traceable source inventory for future manual screenshot annotations. These source images are not copied into this repository and are not yet benchmark labels.",
+  "source": {
+    "repository": "kakadd172-lab/ForTesting",
+    "branch": "kiomet-screenshots",
+    "directory": "screenshots/",
+    "inspected_on": "2026-11-19"
+  },
+  "curation_notes": [
+    "The selected images are consecutive gameplay captures from one visible match/session, not ten independent matches.",
+    "They show a useful progression of owned territory, towers, neutral map nodes, and unit movement.",
+    "All entries remain unannotated. Do not set fully_annotated=true until every visible tower and unit marker has been checked.",
+    "The separate entities_20261119_173032.png image contains detector-debug overlays and is excluded from clean evaluation candidates.",
+    "Landing-page and help-page screenshots are excluded."
+  ],
+  "screenshots": [
+    {
+      "image": "screen_20261118_225449.png",
+      "source_path": "screenshots/screen_20261118_225449.png",
+      "source_blob_sha": "2c13c23a291d13c71e7da12eb9e7bf3d04c98832",
+      "source_bytes": 130859,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225449.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225454.png",
+      "source_path": "screenshots/screen_20261118_225454.png",
+      "source_blob_sha": "86295446955be41225198220cc15c5b8e8a31155",
+      "source_bytes": 147572,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225454.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225459.png",
+      "source_path": "screenshots/screen_20261118_225459.png",
+      "source_blob_sha": "39db19977d000e586b5d43f858fad649b877368b",
+      "source_bytes": 159418,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225459.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225504.png",
+      "source_path": "screenshots/screen_20261118_225504.png",
+      "source_blob_sha": "fbc431c0d74d27c529c6cd4962fa4a2a47ccd7fa",
+      "source_bytes": 160139,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225504.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225509.png",
+      "source_path": "screenshots/screen_20261118_225509.png",
+      "source_blob_sha": "1e67715206e4628bed011827993dbcc35f30d813",
+      "source_bytes": 160490,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225509.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225514.png",
+      "source_path": "screenshots/screen_20261118_225514.png",
+      "source_blob_sha": "cc6984b15bacc4ccae3a8c3efcf20dc74a474ef8",
+      "source_bytes": 182918,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225514.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225519.png",
+      "source_path": "screenshots/screen_20261118_225519.png",
+      "source_blob_sha": "fb4af1a8f86218dd12d00a97c1eae56280733d93",
+      "source_bytes": 183063,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225519.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225524.png",
+      "source_path": "screenshots/screen_20261118_225524.png",
+      "source_blob_sha": "3b3661304d54f7cdfc2331feaad1fdbb65d85b46",
+      "source_bytes": 183791,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225524.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225530.png",
+      "source_path": "screenshots/screen_20261118_225530.png",
+      "source_blob_sha": "8ef2e3ce5734929bfded7761c7be895f0ea0dabe",
+      "source_bytes": 183702,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225530.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    },
+    {
+      "image": "screen_20261118_225535.png",
+      "source_path": "screenshots/screen_20261118_225535.png",
+      "source_blob_sha": "5d8e15f0ee4a454893be1e34fa14c126e7815779",
+      "source_bytes": 189741,
+      "source_url": "https://github.com/kakadd172-lab/ForTesting/blob/kiomet-screenshots/screenshots/screen_20261118_225535.png",
+      "status": "candidate_unannotated",
+      "fully_annotated": false
+    }
+  ]
+}
