@@ -34,10 +34,13 @@ class VisionEntityDetectorTests(unittest.TestCase):
         self.assertEqual(tiles[0], ("top_left", 0, 0, 56, 56))
         self.assertEqual(tiles[-1], ("bottom_right", 44, 44, 100, 100))
 
-    def test_single_dimension_image_uses_one_tile(self):
+    def test_short_dimension_is_not_split(self):
         self.assertEqual(
             _tile_bounds(100, 40, 0.12),
-            [("top_left", 0, 0, 56, 40)],
+            [
+                ("top_left", 0, 0, 56, 40),
+                ("top_right", 44, 0, 100, 40),
+            ],
         )
 
     def test_invalid_overlap_is_rejected(self):
