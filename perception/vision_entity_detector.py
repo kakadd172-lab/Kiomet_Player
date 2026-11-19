@@ -140,7 +140,7 @@ class VisionEntityDetector:
         upscale: float = 1.0,
         max_image_side: int | None = 960,
         tiled: bool = False,
-        num_threads: int = 8,
+        num_threads: int | None = None,
         min_detector_confidence: float = 0.35,
         duplicate_iou: float = 0.45,
         screen_recognizer: ScreenEntityRecognizer | None = None,
@@ -161,8 +161,10 @@ class VisionEntityDetector:
             raise ValueError("max_image_side must be None (native resolution) or an integer of at least 256")
         if not isinstance(tiled, bool):
             raise ValueError("tiled must be a boolean")
-        if not isinstance(num_threads, int) or isinstance(num_threads, bool) or num_threads < 1:
-            raise ValueError("num_threads must be a positive integer")
+        if num_threads is not None and (
+            not isinstance(num_threads, int) or isinstance(num_threads, bool) or num_threads < 1
+        ):
+            raise ValueError("num_threads must be None (Ollama default) or a positive integer")
         if not 0 <= min_detector_confidence <= 1:
             raise ValueError("min_detector_confidence must be between 0 and 1")
         if not 0 < duplicate_iou <= 1:
@@ -276,7 +278,7 @@ class VisionEntityDetector:
                 "options": {
                     "temperature": 0.1,
                     "num_predict": DEFAULT_MAX_OUTPUT_TOKENS,
-                    "num_thread": self.num_threads,
+                    **({"num_thread": self.num_threads} if self.num_threads is not None else {}),
                 },
             },
             timeout=self.timeout,
