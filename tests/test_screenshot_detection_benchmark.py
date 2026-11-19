@@ -7,6 +7,7 @@ from perception.screenshot_detection_benchmark import (
     box_iou,
     load_labels,
     _category_metrics,
+    _parse_max_image_side,
     match_entities,
 )
 
@@ -19,6 +20,19 @@ class ScreenshotDetectionBenchmarkTests(unittest.TestCase):
             "bbox": bbox or {"x": 0.1, "y": 0.1, "width": 0.2, "height": 0.2},
             "expected_name": name,
         }
+
+    def test_max_image_side_accepts_arbitrary_sizes_and_native_mode(self):
+        self.assertEqual(_parse_max_image_side("720"), 720)
+        self.assertEqual(_parse_max_image_side("1440"), 1440)
+        self.assertEqual(_parse_max_image_side("native"), None)
+        self.assertEqual(_parse_max_image_side("NONE"), None)
+
+    def test_max_image_side_rejects_invalid_values(self):
+        import argparse
+        for value in ("255", "0", "-1", "auto", "960.5"):
+            with self.subTest(value=value):
+                with self.assertRaises(argparse.ArgumentTypeError):
+                    _parse_max_image_side(value)
 
     def test_iou_for_identical_and_disjoint_boxes(self):
         first = (0.1, 0.1, 0.2, 0.2)
