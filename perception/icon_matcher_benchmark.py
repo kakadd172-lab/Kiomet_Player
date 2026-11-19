@@ -219,6 +219,45 @@ def run_benchmark(
                     "bounds": list(bounds) if bounds is not None else None,
                 }
 
+            def source_image_stats(template_record: Any) -> dict[str, Any]:
+                source = cv2.imread(
+                    str(template_record.template_path), cv2.IMREAD_UNCHANGED
+                )
+                if source is None:
+                    return {"error": "template image could not be loaded"}
+
+                if source.ndim == 3 and source.shape[2] == 4:
+                    alpha = source[:, :, 3]
+                    grayscale_source = cv2.cvtColor(
+                        source[:, :, :3], cv2.COLOR_BGR2GRAY
+                    )
+                    alpha_mask = alpha > 16
+                    opaque_gray_mask = alpha_mask & (grayscale_source > 16)
+                    mask_type = "alpha_gt_16"
+                else:
+                    grayscale_source = (
+                        source if source.ndim == 2
+                        else cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
+                    )
+                    alpha_mask = np.ones(grayscale_source.shape, dtype=bool)
+                    opaque_gray_mask = grayscale_source > 16
+                    mask_type = "opaque_image"
+
+                def raw_stats(mask: np.ndarray) -> dict[str, Any]:
+                    points = cv2.findNonZero(mask.astype(np.uint8))
+                    bounds = cv2.boundingRect(points) if points is not None else None
+                    return {
+                        "foreground_pixels": int(np.count_nonzero(mask)),
+                        "bounds": list(bounds) if bounds is not None else None,
+                    }
+
+                return {
+                    "image_size": [int(source.shape[1]), int(source.shape[0])],
+                    "alpha_or_opaque_mask_type": mask_type,
+                    "alpha_or_opaque": raw_stats(alpha_mask),
+                    "visible_grayscale_strokes": raw_stats(opaque_gray_mask),
+                }
+
             shape_diagnostics = {
                 "candidate_masks": {
                     name: {
@@ -233,7 +272,9 @@ def run_benchmark(
                     for name, mask in candidate_masks.items()
                 },
                 "expected_template": mask_stats(expected_shape),
+                "expected_template_source": source_image_stats(expected),
                 "top1_template": mask_stats(top_shape) if top_shape is not None else None,
+                "top1_template_source": source_image_stats(top.record) if top is not None else None,
             }
 
         results.append({
