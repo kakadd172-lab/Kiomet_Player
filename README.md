@@ -179,6 +179,16 @@ for screenshot_path in screenshot_paths:
 
 The default tracker retains a track for up to two missed frames before expiring it. Each track also keeps a bounded history (120 frames by default), including observed positions and explicitly marked missing frames. Retrieve it with `pipeline.history(entity.track_id)`. The history is useful for movement analysis and debugging, but it is not a full game-state history or a guarantee that a track represents the same real game object indefinitely. Validate it with labelled multi-frame sequences before using its IDs for decisions.
 
+### Evaluate temporal tracking across a replay
+
+The tracking replay evaluator measures frame-level detection quality, ID switches, track fragmentation, and reacquisition using manually linked ground-truth IDs. It consumes recorded predictions and does not call the vision model, making comparisons deterministic. See `benchmark_tracking/README.md` for the JSON schema and annotation rules. Run it with:
+
+```powershell
+.\\.venv\\Scripts\\python.exe -m perception.tracking_benchmark --input benchmark_tracking/replays/match_01.json --output benchmark_results/tracking_match_01.json
+```
+
+The example path is a location for a replay you create; no real gameplay labels or tracking results are included yet. Do not interpret synthetic unit-test results as measured gameplay accuracy.
+
 ### Run the labelled icon-matcher benchmark
 
 The benchmark compares manually labelled screenshot crops against all registered tower or unit templates. It writes a JSON report to the ignored `benchmark_results/` directory:
