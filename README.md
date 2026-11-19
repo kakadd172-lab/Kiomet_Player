@@ -28,16 +28,17 @@ This repository is an early-stage prototype. The tracked code currently includes
 - Screen-classification and vision/perception experiments.
 - Tower and unit reference metadata.
 - Official Kiomet SVG icon assets, a source manifest, and scripts for rendering and preparing those assets.
-- Initial recognition package structure and registry code.
+- Category-aware tower and unit icon recognizers with conservative confidence handling.
+- A screenshot-region recognition layer that crops caller-proposed regions and returns identities, candidate rankings, and screen coordinates.
 
-Some recognition modules are currently placeholders or incomplete. A file or package existing in the repository does not mean its feature is implemented or reliable. Results from vision models should be treated as estimates and checked against the screenshot.
+The screenshot-region recognizer does **not** detect objects by itself: it requires bounding-box proposals from a separate detector or vision system. The current labelled crop dataset is small, so matching thresholds and scores remain experimental rather than calibrated probabilities. Results must be validated against real gameplay screenshots.
 
 ## Repository layout
 
 | Path | Purpose |
 | --- | --- |
 | `browser_test.py` | Opens Kiomet in Chromium and captures an initial screenshot. |
-| `perception/` | Screenshot observation, screen classification, vision experiments, and game-state extraction. |
+| `perception/` | Screenshot observation, screen classification, region-based entity recognition, vision experiments, and game-state extraction. |
 | `kiomet_knowledge/assets/towers/official_svg/` | Kiomet tower SVG reference assets. |
 | `kiomet_knowledge/assets/troops/official_svg/` | Kiomet unit SVG reference assets. |
 | `kiomet_knowledge/assets/derived/` | Rendered PNG references and contact sheets derived from the SVG assets. |
@@ -127,6 +128,25 @@ python perception/game_state_extractor.py
 ```
 
 The script selects the newest `screen_*.png` file in `screenshots/` and asks the configured local vision model to return structured JSON. The output is experimental: visual models can miss, misclassify, or misread game elements.
+
+### Classify proposed regions in a screenshot
+
+The region recognizer can be used by a future detector to classify boxes without coupling object detection to icon matching. Coordinates are normalized to the screenshot dimensions:
+
+```python
+from perception.entity_recognizer import RegionProposal, ScreenEntityRecognizer
+
+recognizer = ScreenEntityRecognizer()
+observations = recognizer.recognize_regions(
+    "screenshots/screen_example.png",
+    [RegionProposal("candidate-1", "tower", 0.25, 0.30, 0.06, 0.08)],
+    method="shape",
+)
+for observation in observations:
+    print(observation.display_name, observation.status, observation.bbox)
+```
+
+A proposal category must be `tower` or `unit`. Each result includes normalized and pixel bounding boxes, ranked candidates, similarity scores, and optional dominant colour. A rejected/ambiguous result has no accepted identity. This API classifies supplied regions; it does not find regions in a full screenshot.
 
 ### Run the labelled icon-matcher benchmark
 
