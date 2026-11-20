@@ -159,17 +159,34 @@ def run_benchmark(
                 candidates,
                 key=lambda mask: matcher._shape_similarity(mask, expected_template),
             )
-            # 3x2 diagnostic, in row-major order:
-            # filtered / luminance / high-brightness candidates;
-            # expected template / top-ranked template / best candidate for expected.
+            # 3x2 diagnostic, in row-major order. Label every panel so
+            # archived montages remain interpretable after matcher changes.
             tile_size = (192, 192)
-            tiles = [
-                cv2.resize(mask, tile_size, interpolation=cv2.INTER_NEAREST)
-                for mask in (
-                    filtered, luminance, high_brightness,
-                    expected_template, top_template, best_expected_candidate,
+            panel_specs = (
+                ("Filtered", filtered),
+                ("Luminance", luminance),
+                ("Bright 0.72", high_brightness),
+                (f"Expected: {expected.display_name}", expected_template),
+                (
+                    f"Top-1: {all_ranked[0].record.display_name}"
+                    if all_ranked else "Top-1: none",
+                    top_template,
+                ),
+                ("Best expected pass", best_expected_candidate),
+            )
+            tiles = []
+            for label, mask in panel_specs:
+                resized = cv2.resize(
+                    mask, tile_size, interpolation=cv2.INTER_NEAREST
                 )
-            ]
+                panel = np.zeros((tile_size[1] + 30, tile_size[0]), dtype=np.uint8)
+                panel[30:, :] = resized
+                cv2.putText(
+                    panel, label[:27], (5, 21),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.48, 255, 1,
+                    cv2.LINE_AA,
+                )
+                tiles.append(panel)
             montage = np.vstack((
                 np.hstack((tiles[0], tiles[1], tiles[2])),
                 np.hstack((tiles[3], tiles[4], tiles[5])),
